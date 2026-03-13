@@ -1,0 +1,122 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Magicyan",
+  "projectDescription": "A collection of TypeScript utility libraries for Discord bot development with discord.js",
+  "theme": "aspen",
+  "primaryColor": "#7c7c7c",
+  "lightColor": "#070707",
+  "darkColor": "#c4c4c4",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Packages",
+            "pages": [
+              "packages/overview",
+              "packages/core",
+              "packages/discord",
+              "packages/discord-events",
+              "packages/discord-ui",
+              "packages/canvas",
+              "packages/minecraft"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/discord-bot-setup",
+              "guides/custom-events",
+              "guides/ui-components",
+              "guides/canvas-rendering"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core",
+            "pages": [
+              "api/core/format",
+              "api/core/validation",
+              "api/core/timers",
+              "api/core/date",
+              "api/core/math",
+              "api/core/convert"
+            ]
+          },
+          {
+            "group": "Discord",
+            "pages": [
+              "api/discord/channels",
+              "api/discord/members",
+              "api/discord/roles",
+              "api/discord/embeds",
+              "api/discord/components",
+              "api/discord/messages"
+            ]
+          },
+          {
+            "group": "Discord Events",
+            "pages": [
+              "api/discord-events/setup",
+              "api/discord-events/member-events",
+              "api/discord-events/role-events",
+              "api/discord-events/channel-events",
+              "api/discord-events/user-events"
+            ]
+          },
+          {
+            "group": "Discord UI",
+            "pages": [
+              "api/discord-ui/menus",
+              "api/discord-ui/prompts"
+            ]
+          },
+          {
+            "group": "Canvas",
+            "pages": [
+              "api/canvas/canvas-builder",
+              "api/canvas/utilities"
+            ]
+          },
+          {
+            "group": "Minecraft",
+            "pages": [
+              "api/minecraft/mojang",
+              "api/minecraft/server",
+              "api/minecraft/skins"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Utility functions for Discord.js bot development",
+    "Extended Discord events (member connect/disconnect, timeouts, etc.)",
+    "Discord UI components and menus",
+    "Canvas rendering utilities",
+    "Minecraft API integrations",
+    "TypeScript-first with comprehensive type definitions"
+  ],
+  "publicApiSurface": [
+    "@magicyan/core - format, validation, timers, date, math, convert, check, with, sleep",
+    "@magicyan/discord - channels, members, roles, embeds, components, messages, commands, webhooks",
+    "@magicyan/discord-events - initDiscordEvents, extendedRoleCreate, guildMemberConnect, userBanAdd, webhookMessageCreate",
+    "@magicyan/discord-ui - menus, prompts",
+    "@magicyan/canvas - CanvasBuilder and utility functions",
+    "@magicyan/minecraft - mojang, server, skins API wrappers"
+  ]
+}
