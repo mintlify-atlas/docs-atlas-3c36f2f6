@@ -1,0 +1,88 @@
+---
+title: Setup
+description: Initialize the discord-events package to enable extended event listeners
+---
+
+## initDiscordEvents
+
+Initializes the discord-events package by setting up internal event listeners that transform Discord.js base events into more useful extended events.
+
+```typescript
+import { initDiscordEvents } from "@magicyan/discord-events";
+import { Client } from "discord.js";
+
+const client = new Client({
+  intents: [
+    // Your intents
+  ]
+});
+
+initDiscordEvents(client);
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+### Parameters
+
+<ParamField path="client" type="Client" required>
+  The Discord.js client instance to initialize extended events on.
+</ParamField>
+
+### What it does
+
+This function sets up internal listeners on your Discord.js client that:
+
+- Listen to `guildAuditLogEntryCreate` events to detect role creation, user bans, kicks, and timeouts
+- Listen to `roleDelete` and `roleUpdate` events to provide executor information
+- Listen to `channelDelete` events to provide executor information
+- Listen to `voiceStateUpdate` events to detect voice channel connections, disconnections, and moves
+- Listen to `messageCreate` events to detect webhook messages
+
+After calling `initDiscordEvents`, you can use all the extended event listeners documented in the other API pages.
+
+<Note>
+  Call this function once during your bot's initialization, before logging in.
+</Note>
+
+### Example with all features
+
+```typescript
+import { initDiscordEvents } from "@magicyan/discord-events";
+import { Client, GatewayIntentBits } from "discord.js";
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessages,
+  ]
+});
+
+// Initialize extended events
+initDiscordEvents(client);
+
+// Now you can use extended events
+client.on("guildMemberConnect", (member, channel) => {
+  console.log(`${member.user.tag} connected to ${channel.name}`);
+});
+
+client.on("userBanAdd", (user, executor, reason, guild) => {
+  console.log(`${user.tag} was banned by ${executor.user.tag}`);
+});
+
+client.on("extendedRoleCreate", (role, executor) => {
+  console.log(`${role.name} was created by ${executor.user.tag}`);
+});
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+<Warning>
+  Make sure your bot has the necessary intents enabled:
+  - `GuildMembers` for member events
+  - `GuildModeration` for ban and timeout events
+  - `GuildVoiceStates` for voice channel events
+  - `Guilds` for role and channel events
+</Warning>

@@ -1,0 +1,701 @@
+---
+title: Interactive UI Components
+description: Guide to creating interactive user interfaces with @magicyan/discord-ui
+icon: palette
+---
+
+The `@magicyan/discord-ui` package provides pre-built interactive components for Discord bots, including menus, pagination, and user prompts. These components handle complex interaction logic so you can focus on your bot's functionality.
+
+## Installation
+
+Install the package:
+
+```bash
+npm install @magicyan/discord-ui
+```
+
+## Global Configuration
+
+You can customize the default appearance of all UI components globally:
+
+```typescript src/index.ts
+import { discordUI } from "@magicyan/discord-ui";
+import { ButtonStyle } from "discord.js";
+
+discordUI({
+  prompts: {
+    confirm: {
+      buttons: {
+        confirm: { label: "Confirm", style: ButtonStyle.Success },
+        cancel: { label: "Cancel", style: ButtonStyle.Secondary }
+      }
+    }
+  },
+  menus: {
+    pagination: {
+      buttons: {
+        previous: { style: ButtonStyle.Danger },
+        home: { label: "Home", emoji: "🏠" },
+        next: { label: "Next", style: ButtonStyle.Success },
+        close: { emoji: "❌" }
+      }
+    },
+    multimenu: {
+      viewType: "grid",
+      placeholder: "Select an option",
+      buttons: {
+        next: { label: "➡️" },
+        previous: { label: "⬅️" }
+      }
+    }
+  }
+});
+```
+
+<Note>
+  Global customization is applied to all components, but can be overridden by component-specific customization.
+</Note>
+
+## Confirmation Prompts
+
+Confirmation prompts create simple yes/no dialogs for user confirmation.
+
+### Basic Usage
+
+```typescript
+import { confirm } from "@magicyan/discord-ui";
+import { ActionRowBuilder, ButtonBuilder } from "discord.js";
+
+await confirm({
+  render: components => interaction.reply({ 
+    ephemeral: true, 
+    fetchReply: true, 
+    components,
+    content: "Do you want to confirm this action?" 
+  }),
+  async onClick(interaction, isCancel) {
+    await interaction.update({ components: [] });
+    
+    if (isCancel) {
+      await interaction.editReply({ 
+        content: "Action canceled" 
+      });
+      return;
+    }
+    
+    await interaction.editReply({ 
+      content: "Confirmed! Processing..." 
+    });
+  },
+});
+```
+
+<Warning>
+  The `render` method must return a Message object. Make sure to set `fetchReply: true` when replying to interactions.
+</Warning>
+
+### Custom Button Styles
+
+Customize the appearance of confirm/cancel buttons:
+
+```typescript
+import { ButtonStyle } from "discord.js";
+
+await confirm({
+  buttons: {
+    confirm: { 
+      label: "Continue", 
+      style: ButtonStyle.Primary,
+      emoji: "✅"
+    },
+    cancel: { 
+      label: "Go Back",
+      style: ButtonStyle.Secondary,
+      emoji: "⬅️"
+    },
+  },
+  render: components => interaction.reply({ 
+    ephemeral: true, 
+    fetchReply: true, 
+    components,
+    content: "Do you want to continue?" 
+  }),
+  onClick(interaction, isCancel) {
+    // Handle response
+  },
+});
+```
+
+### With Timeout
+
+Add a timeout to automatically close the prompt:
+
+```typescript
+await confirm({
+  time: 60000, // 60 seconds
+  render: components => interaction.reply({ 
+    ephemeral: true, 
+    fetchReply: true, 
+    components,
+    content: "You have 60 seconds to respond" 
+  }),
+  onClick(interaction, isCancel) {
+    interaction.update({ 
+      content: isCancel ? "Canceled" : "Confirmed!",
+      components: [] 
+    });
+  },
+  onTimeout() {
+    interaction.editReply({ 
+      content: "Time's up! The prompt has expired.",
+      components: [] 
+    });
+  },
+});
+```
+
+### Custom Component Layout
+
+Fully customize the button layout:
+
+```typescript
+await confirm({
+  components: ({ confirm, cancel }) => [
+    new ActionRowBuilder<ButtonBuilder>({
+      components: [cancel, confirm]
+    })
+  ],
+  render: components => interaction.reply({ 
+    ephemeral: true,
+    fetchReply: true,
+    components,
+    embeds: [createEmbed({
+      title: "Confirmation Required",
+      description: "Are you sure you want to delete this data?",
+      color: "Red"
+    })]
+  }),
+  onClick(interaction, isCancel) {
+    // Handle response
+  },
+});
+```
+
+## Pagination Menus
+
+Pagination menus allow users to navigate through multiple embeds.
+
+### Basic Pagination
+
+```typescript
+import { pagination } from "@magicyan/discord-ui";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder } from "discord.js";
+
+const embeds = [
+  new EmbedBuilder({
+    title: "Page 1",
+    description: "This is the first page",
+    color: 0x5865F2,
+    footer: { text: "Page 1/3" }
+  }),
+  new EmbedBuilder({
+    title: "Page 2",
+    description: "This is the second page",
+    color: 0x57F287,
+    footer: { text: "Page 2/3" }
+  }),
+  new EmbedBuilder({
+    title: "Page 3",
+    description: "This is the third page",
+    color: 0xFEE75C,
+    footer: { text: "Page 3/3" }
+  }),
+];
+
+await pagination({
+  embeds,
+  render: (embeds, components) => interaction.reply({ 
+    fetchReply: true,
+    ephemeral: true,
+    embeds,
+    components 
+  }),
+});
+```
+
+### Dynamic Embeds from Data
+
+Generate pagination embeds from data:
+
+```typescript
+import { findRole } from "@magicyan/discord";
+
+const roles = Array.from(interaction.guild.roles.cache.values())
+  .filter(role => !role.managed);
+
+const embeds = roles.map((role, index) => new EmbedBuilder({
+  title: role.name,
+  description: `<@&${role.id}>`,
+  color: role.color,
+  fields: [
+    { name: "ID", value: role.id, inline: true },
+    { name: "Members", value: `${role.members.size}`, inline: true },
+    { name: "Position", value: `${role.position}`, inline: true },
+    { name: "Mentionable", value: role.mentionable ? "Yes" : "No", inline: true },
+    { name: "Hoisted", value: role.hoist ? "Yes" : "No", inline: true },
+  ],
+  footer: { text: `Role ${index + 1}/${roles.length}` }
+}));
+
+await pagination({
+  embeds,
+  render: (embeds, components) => interaction.reply({ 
+    fetchReply: true,
+    ephemeral: true,
+    embeds,
+    components 
+  }),
+});
+```
+
+### Custom Button Layout
+
+Customize the navigation buttons:
+
+```typescript
+await pagination({
+  embeds,
+  buttons: {
+    previous: { emoji: "⬅️", style: ButtonStyle.Secondary },
+    home: { emoji: "🏠", label: "Home" },
+    next: { emoji: "➡️", style: ButtonStyle.Primary },
+    close: { emoji: "✖️", style: ButtonStyle.Danger }
+  },
+  components: ({ previous, home, next, close }) => [
+    new ActionRowBuilder<ButtonBuilder>({
+      components: [previous, home, next, close]
+    })
+  ],
+  render: (embeds, components) => interaction.reply({ 
+    fetchReply: true,
+    embeds,
+    components 
+  }),
+});
+```
+
+### With Action Button
+
+Add an action button that performs operations on the current page:
+
+```typescript
+await pagination({
+  embeds,
+  components: ({ action, close, ...buttons }) => [
+    new ActionRowBuilder<ButtonBuilder>({
+      components: Object.values(buttons)
+    }),
+    new ActionRowBuilder<ButtonBuilder>({
+      components: [action, close]
+    })
+  ],
+  render: (embeds, components) => interaction.reply({ 
+    fetchReply: true,
+    ephemeral: true,
+    embeds,
+    components 
+  }),
+  onClick(interaction, embed) {
+    interaction.reply({ 
+      ephemeral: true,
+      content: `You selected: ${embed.data.title}`,
+      embeds: [embed] 
+    });
+  },
+});
+```
+
+### Custom Close Behavior
+
+```typescript
+await pagination({
+  embeds,
+  render: (embeds, components) => interaction.reply({ 
+    fetchReply: true,
+    embeds,
+    components 
+  }),
+  onClose(interaction) {
+    interaction.update({ 
+      components: [],
+      embeds: [],
+      content: "Pagination closed" 
+    });
+  },
+});
+```
+
+## Multi-Menu Component
+
+The multi-menu component combines pagination with a select menu for advanced navigation.
+
+### Basic Multi-Menu
+
+```typescript
+import { multimenu } from "@magicyan/discord-ui";
+import { createEmbed } from "@magicyan/discord";
+
+const items = [
+  {
+    title: "Option 1",
+    description: "This is the first option",
+    color: "#5865F2",
+    option: {
+      label: "Select Option 1",
+      value: "option-1",
+      emoji: "1️⃣"
+    }
+  },
+  {
+    title: "Option 2",
+    description: "This is the second option",
+    color: "#57F287",
+    option: {
+      label: "Select Option 2",
+      value: "option-2",
+      emoji: "2️⃣"
+    }
+  },
+  {
+    title: "Option 3",
+    description: "This is the third option",
+    color: "#FEE75C",
+    option: {
+      label: "Select Option 3",
+      value: "option-3",
+      emoji: "3️⃣"
+    }
+  },
+];
+
+await multimenu({
+  items,
+  itemsPerPage: 5,
+  placeholder: "Choose an option",
+  render: (embeds, components) => interaction.reply({
+    fetchReply: true,
+    ephemeral: true,
+    embeds,
+    components
+  }),
+  onSelect(interaction, item) {
+    interaction.reply({
+      ephemeral: true,
+      content: `You selected: **${item.title}**`
+    });
+  },
+});
+```
+
+### View Types
+
+The multi-menu supports different view types:
+
+```typescript
+// List view - one item per row
+await multimenu({
+  items,
+  viewType: "list",
+  render: (embeds, components) => interaction.reply({
+    fetchReply: true, embeds, components
+  }),
+});
+
+// Items view - 2 items per row
+await multimenu({
+  items,
+  viewType: "items",
+  render: (embeds, components) => interaction.reply({
+    fetchReply: true, embeds, components
+  }),
+});
+
+// Grid view - 3 items per row
+await multimenu({
+  items,
+  viewType: "grid",
+  render: (embeds, components) => interaction.reply({
+    fetchReply: true, embeds, components
+  }),
+});
+
+// Blocks view - separate embed per item
+await multimenu({
+  items,
+  viewType: "blocks",
+  render: (embeds, components) => interaction.reply({
+    fetchReply: true, embeds, components
+  }),
+});
+```
+
+### With Custom Embed
+
+Provide a base embed that items will be added to:
+
+```typescript
+const baseEmbed = createEmbed({
+  title: "Server Commands",
+  description: "Browse available commands",
+  color: "Blue",
+});
+
+await multimenu({
+  embed: baseEmbed,
+  items,
+  viewType: "list",
+  render: (embeds, components) => interaction.reply({
+    fetchReply: true,
+    embeds,
+    components
+  }),
+});
+```
+
+### Dynamic View Switching
+
+Users can switch between view types using the view button:
+
+```typescript
+await multimenu({
+  items,
+  viewType: "items", // Starting view
+  buttons: {
+    view: { 
+      emoji: "👀",
+      style: ButtonStyle.Secondary 
+    }
+  },
+  render: (embeds, components) => interaction.reply({
+    fetchReply: true,
+    embeds,
+    components
+  }),
+  onSelect(interaction, item) {
+    interaction.reply({
+      ephemeral: true,
+      content: `Selected: ${item.title}`
+    });
+  },
+});
+```
+
+<Info>
+  Clicking the view button cycles through: list → items → grid → blocks → list
+</Info>
+
+### Complete Example: Server Info Menu
+
+```typescript
+import { multimenu } from "@magicyan/discord-ui";
+import { createEmbed } from "@magicyan/discord";
+import { ChatInputCommandInteraction } from "discord.js";
+
+export async function showServerInfo(interaction: ChatInputCommandInteraction) {
+  if (!interaction.inCachedGuild()) return;
+
+  const { guild } = interaction;
+  const channels = guild.channels.cache;
+  
+  const items = [
+    {
+      title: "📊 Overview",
+      description: `**Name:** ${guild.name}\n**Created:** <t:${Math.floor(guild.createdTimestamp / 1000)}:R>\n**Owner:** <@${guild.ownerId}>`,
+      color: "#5865F2",
+      thumbnail: guild.iconURL() ?? undefined,
+      option: {
+        label: "Server Overview",
+        value: "overview",
+        emoji: "📊"
+      }
+    },
+    {
+      title: "👥 Members",
+      description: `**Total:** ${guild.memberCount}\n**Humans:** ${guild.members.cache.filter(m => !m.user.bot).size}\n**Bots:** ${guild.members.cache.filter(m => m.user.bot).size}`,
+      color: "#57F287",
+      option: {
+        label: "Member Stats",
+        value: "members",
+        emoji: "👥"
+      }
+    },
+    {
+      title: "💬 Channels",
+      description: `**Text:** ${channels.filter(c => c.isTextBased()).size}\n**Voice:** ${channels.filter(c => c.isVoiceBased()).size}\n**Categories:** ${channels.filter(c => c.type === 4).size}`,
+      color: "#FEE75C",
+      option: {
+        label: "Channel Stats",
+        value: "channels",
+        emoji: "💬"
+      }
+    },
+    {
+      title: "🎭 Roles",
+      description: `**Total Roles:** ${guild.roles.cache.size}\n**Highest Role:** ${guild.roles.highest}`,
+      color: "#EB459E",
+      option: {
+        label: "Role Information",
+        value: "roles",
+        emoji: "🎭"
+      }
+    },
+  ];
+
+  await multimenu({
+    embed: createEmbed({
+      title: `${guild.name} Information`,
+      thumbnail: guild.iconURL(),
+    }),
+    items,
+    viewType: "list",
+    itemsPerPage: 4,
+    placeholder: "Select a category",
+    render: (embeds, components) => interaction.reply({
+      fetchReply: true,
+      ephemeral: true,
+      embeds,
+      components
+    }),
+    onSelect(interaction, item) {
+      interaction.reply({
+        ephemeral: true,
+        content: `📋 Viewing: **${item.title}**`
+      });
+    },
+    onClose(interaction) {
+      interaction.update({
+        content: "Menu closed",
+        embeds: [],
+        components: []
+      });
+    },
+  });
+}
+```
+
+## Filtering Interactions
+
+All components support filtering to restrict who can interact:
+
+```typescript
+await confirm({
+  filter: (i) => i.user.id === interaction.user.id,
+  render: components => interaction.reply({ 
+    fetchReply: true,
+    components,
+    content: "Only you can use this prompt" 
+  }),
+  onClick(interaction, isCancel) {
+    // Only the original user can click
+  },
+});
+
+await pagination({
+  embeds,
+  filter: (i) => {
+    // Only allow moderators
+    const member = i.guild?.members.cache.get(i.user.id);
+    return member?.permissions.has("ModerateMembers") ?? false;
+  },
+  render: (embeds, components) => interaction.reply({ 
+    fetchReply: true,
+    embeds,
+    components 
+  }),
+});
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always use fetchReply: true">
+    The render function must return a Message object. Always set `fetchReply: true` when replying to interactions:
+
+    ```typescript
+    // ✅ Correct
+    render: components => interaction.reply({ 
+      fetchReply: true,
+      components 
+    })
+
+    // ❌ Wrong - won't work
+    render: components => interaction.reply({ 
+      components 
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Use ephemeral for prompts">
+    Make confirmation prompts ephemeral to avoid cluttering channels:
+
+    ```typescript
+    await confirm({
+      render: components => interaction.reply({ 
+        ephemeral: true,
+        fetchReply: true,
+        components 
+      }),
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Add timeouts for better UX">
+    Always include timeouts to prevent components from staying active indefinitely:
+
+    ```typescript
+    await pagination({
+      embeds,
+      time: 300000, // 5 minutes
+      onTimeout() {
+        interaction.editReply({
+          content: "This menu has expired",
+          components: []
+        });
+      },
+      render: (embeds, components) => interaction.reply({
+        fetchReply: true,
+        embeds,
+        components
+      }),
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Filter interactions appropriately">
+    Use filters to ensure only authorized users can interact:
+
+    ```typescript
+    await confirm({
+      filter: (i) => i.user.id === interaction.user.id,
+      // ... rest of config
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Discord Bot Setup" icon="robot" href="/guides/discord-bot-setup">
+    Learn how to set up your Discord bot project
+  </Card>
+  <Card title="Custom Events" icon="bolt" href="/guides/custom-events">
+    Use extended Discord events for advanced functionality
+  </Card>
+  <Card title="Canvas Rendering" icon="image" href="/guides/canvas-rendering">
+    Create custom images for your bot
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/discord-ui/menus">
+    View the complete UI API documentation
+  </Card>
+</CardGroup>

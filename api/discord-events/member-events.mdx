@@ -1,0 +1,236 @@
+---
+title: Member Events
+description: Extended events for guild member voice and timeout activities
+---
+
+## guildMemberConnect
+
+Emitted when a guild member joins a voice channel.
+
+```typescript
+client.on("guildMemberConnect", (member, channel, oldChannel) => {
+  if (oldChannel) {
+    console.log(`${member.user.tag} moved from ${oldChannel.name} to ${channel.name}`);
+  } else {
+    console.log(`${member.user.tag} joined ${channel.name}`);
+  }
+});
+```
+
+### Parameters
+
+<ParamField path="member" type="GuildMember" required>
+  The member who connected to a voice channel.
+</ParamField>
+
+<ParamField path="channel" type="VoiceBasedChannel" required>
+  The voice channel the member connected to.
+</ParamField>
+
+<ParamField path="oldChannel" type="VoiceBasedChannel | null" required>
+  The previous voice channel the member was in, or `null` if they weren't in a channel before.
+</ParamField>
+
+### Use cases
+
+- Log voice channel joins
+- Welcome users with a sound or message
+- Track voice channel activity
+- Implement voice-based role assignment
+
+---
+
+## guildMemberDisconnect
+
+Emitted when a guild member leaves a voice channel.
+
+```typescript
+client.on("guildMemberDisconnect", (member, channel, newChannel) => {
+  if (newChannel) {
+    console.log(`${member.user.tag} moved from ${channel.name} to ${newChannel.name}`);
+  } else {
+    console.log(`${member.user.tag} left ${channel.name}`);
+  }
+});
+```
+
+### Parameters
+
+<ParamField path="member" type="GuildMember" required>
+  The member who disconnected from a voice channel.
+</ParamField>
+
+<ParamField path="channel" type="VoiceBasedChannel" required>
+  The voice channel the member disconnected from.
+</ParamField>
+
+<ParamField path="newChannel" type="VoiceBasedChannel | null" required>
+  The new voice channel the member moved to, or `null` if they completely disconnected.
+</ParamField>
+
+### Use cases
+
+- Log voice channel leaves
+- Clean up temporary channels
+- Track session durations
+- Implement inactivity detection
+
+---
+
+## guildMemberMoved
+
+Emitted when a guild member is moved between voice channels by a moderator.
+
+```typescript
+client.on("guildMemberMoved", (member, executor, oldChannel, newChannel) => {
+  console.log(
+    `${executor.user.tag} moved ${member.user.tag} from ${oldChannel.name} to ${newChannel.name}`
+  );
+});
+```
+
+### Parameters
+
+<ParamField path="member" type="GuildMember" required>
+  The member who was moved.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The moderator who moved the member.
+</ParamField>
+
+<ParamField path="oldChannel" type="VoiceBasedChannel" required>
+  The voice channel the member was moved from.
+</ParamField>
+
+<ParamField path="newChannel" type="VoiceBasedChannel" required>
+  The voice channel the member was moved to.
+</ParamField>
+
+### Use cases
+
+- Log moderator actions
+- Track voice channel management
+- Audit member movements
+- Implement moderation notifications
+
+<Note>
+  This event only fires when a moderator forcefully moves a user. It does not fire when users move themselves between channels.
+</Note>
+
+---
+
+## guildMemberTimeoutAdd
+
+Emitted when a guild member is timed out.
+
+```typescript
+client.on("guildMemberTimeoutAdd", (member, executor, expireAt, reason) => {
+  console.log(
+    `${executor.user.tag} timed out ${member.user.tag} until ${expireAt.toLocaleString()}`
+  );
+  if (reason) {
+    console.log(`Reason: ${reason}`);
+  }
+});
+```
+
+### Parameters
+
+<ParamField path="member" type="GuildMember" required>
+  The member who was timed out.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The moderator who applied the timeout.
+</ParamField>
+
+<ParamField path="expireAt" type="Date" required>
+  The date and time when the timeout expires.
+</ParamField>
+
+<ParamField path="reason" type="string | null" required>
+  The reason for the timeout, or `null` if no reason was provided.
+</ParamField>
+
+### Use cases
+
+- Log moderation actions
+- Send notifications to moderation channels
+- Track timeout durations
+- Implement automatic appeals systems
+
+```typescript
+client.on("guildMemberTimeoutAdd", (member, executor, expireAt, reason) => {
+  const modLog = member.guild.channels.cache.get("MOD_LOG_CHANNEL_ID");
+  
+  if (modLog?.isTextBased()) {
+    modLog.send({
+      embeds: [{
+        title: "Member Timed Out",
+        fields: [
+          { name: "Member", value: member.user.tag, inline: true },
+          { name: "Moderator", value: executor.user.tag, inline: true },
+          { name: "Expires", value: `<t:${Math.floor(expireAt.getTime() / 1000)}:R>` },
+          { name: "Reason", value: reason || "No reason provided" }
+        ],
+        color: 0xFF0000,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+---
+
+## guildMemberTimeoutRemove
+
+Emitted when a guild member's timeout is removed.
+
+```typescript
+client.on("guildMemberTimeoutRemove", (member, executor) => {
+  console.log(`${executor.user.tag} removed timeout from ${member.user.tag}`);
+});
+```
+
+### Parameters
+
+<ParamField path="member" type="GuildMember" required>
+  The member whose timeout was removed.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The moderator who removed the timeout.
+</ParamField>
+
+### Use cases
+
+- Log moderation actions
+- Send notifications when timeouts end early
+- Track moderator activity
+- Implement timeout appeal systems
+
+```typescript
+client.on("guildMemberTimeoutRemove", (member, executor) => {
+  const modLog = member.guild.channels.cache.get("MOD_LOG_CHANNEL_ID");
+  
+  if (modLog?.isTextBased()) {
+    modLog.send({
+      embeds: [{
+        title: "Timeout Removed",
+        fields: [
+          { name: "Member", value: member.user.tag, inline: true },
+          { name: "Moderator", value: executor.user.tag, inline: true }
+        ],
+        color: 0x00FF00,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+<Warning>
+  These events require the `GuildModeration` intent to be enabled in your Discord application settings.
+</Warning>

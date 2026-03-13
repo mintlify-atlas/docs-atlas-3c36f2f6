@@ -1,0 +1,240 @@
+---
+title: "Validation"
+description: "Validation utilities for strings, URLs, emails, and type checking"
+---
+
+The validation module provides utilities for validating strings, checking types, and verifying data formats.
+
+## isEmail
+
+Validates if the given string is a valid email address.
+
+<ParamField path="email" type="string" required>
+  The email address to validate
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="boolean">
+  `true` if the email is valid, otherwise `false`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Valid Email
+import { isEmail } from '@magicyan/core';
+
+const validEmail = isEmail("example@domain.com");
+console.log(validEmail); // true
+```
+
+```typescript Invalid Email
+import { isEmail } from '@magicyan/core';
+
+const invalidEmail = isEmail("example@domain");
+console.log(invalidEmail); // false
+```
+
+```typescript No @ Symbol
+import { isEmail } from '@magicyan/core';
+
+const invalidEmail = isEmail("notanemail");
+console.log(invalidEmail); // false
+```
+
+</CodeGroup>
+
+---
+
+## isUrl
+
+Validates if the given string is a valid URL.
+
+<ParamField path="url" type="string" required>
+  The URL to validate
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="boolean">
+  `true` if the URL is valid, otherwise `false`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Valid HTTPS URL
+import { isUrl } from '@magicyan/core';
+
+const validUrl = isUrl("https://example.com");
+console.log(validUrl); // true
+```
+
+```typescript Invalid URL
+import { isUrl } from '@magicyan/core';
+
+const invalidUrl = isUrl("example.com");
+console.log(invalidUrl); // false
+```
+
+```typescript FTP URL
+import { isUrl } from '@magicyan/core';
+
+const ftpUrl = isUrl("ftp://files.example.com");
+console.log(ftpUrl); // true
+```
+
+</CodeGroup>
+
+---
+
+## isNumeric
+
+Checks if the given string is numeric (contains only digits).
+
+<ParamField path="text" type="string" required>
+  The text to check
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="boolean">
+  `true` if the text is numeric, otherwise `false`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Numeric String
+import { isNumeric } from '@magicyan/core';
+
+const isNumericText = isNumeric("12345");
+console.log(isNumericText); // true
+```
+
+```typescript Non-Numeric String
+import { isNumeric } from '@magicyan/core';
+
+const isNotNumericText = isNumeric("123a45");
+console.log(isNotNumericText); // false
+```
+
+```typescript Empty String
+import { isNumeric } from '@magicyan/core';
+
+const isEmpty = isNumeric("");
+console.log(isEmpty); // false
+```
+
+</CodeGroup>
+
+---
+
+## isDefined
+
+Checks if a value is defined (not `null` or `undefined`). This is a type guard that narrows the type to exclude `null` and `undefined`.
+
+<ParamField path="value" type="T" required>
+  The value to check
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="value is (T & {})">
+  `true` if the value is not `null` or `undefined`, otherwise `false`. Returns a type predicate that narrows the type
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Filtering Array
+import { isDefined } from '@magicyan/core';
+
+const values = [1, null, 2, undefined, 3];
+const defined = values.filter(isDefined);
+console.log(defined); // [1, 2, 3]
+```
+
+```typescript Type Narrowing
+import { isDefined } from '@magicyan/core';
+
+const value: string | null = "hello";
+if (isDefined(value)) {
+  // TypeScript knows value is string here
+  console.log(value.toUpperCase()); // "HELLO"
+}
+```
+
+```typescript Checking Null
+import { isDefined } from '@magicyan/core';
+
+console.log(isDefined(null)); // false
+console.log(isDefined(undefined)); // false
+console.log(isDefined(0)); // true
+console.log(isDefined("")); // true
+```
+
+</CodeGroup>
+
+---
+
+## isPromise
+
+Checks if a value is a Promise.
+
+<ParamField path="value" type="unknown" required>
+  The value to check
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="value is Promise<T>">
+  `true` if the value is a Promise, otherwise `false`. Returns a type predicate
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Checking Promises
+import { isPromise } from '@magicyan/core';
+
+const promise = Promise.resolve(42);
+console.log(isPromise(promise)); // true
+
+const notPromise = { then: "not a function" };
+console.log(isPromise(notPromise)); // false
+```
+
+```typescript Async Function Result
+import { isPromise } from '@magicyan/core';
+
+async function fetchData() {
+  return "data";
+}
+
+const result = fetchData();
+console.log(isPromise(result)); // true
+```
+
+```typescript Conditional Handling
+import { isPromise } from '@magicyan/core';
+
+function handleValue(value: unknown) {
+  if (isPromise(value)) {
+    value.then(result => console.log(result));
+  } else {
+    console.log(value);
+  }
+}
+
+handleValue(Promise.resolve("async"));
+handleValue("sync");
+```
+
+</CodeGroup>

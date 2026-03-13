@@ -1,0 +1,484 @@
+---
+title: Components
+description: Functions for creating and managing Discord UI components
+---
+
+## createRow
+
+Create an action row containing buttons or select menus.
+
+```ts
+function createRow<Component extends AnyComponentBuilder>(
+  ...components: (Component | Component[] | null | undefined | boolean)[]
+): ActionRowBuilder<Component>
+```
+
+<ParamField path="components" type="Component[]" required>
+  One or more components to add to the row. Supports buttons, select menus, and other message components. Null, undefined, and boolean values are automatically filtered out.
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Button Row
+import { createRow } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const row = createRow(
+  new ButtonBuilder({
+    customId: "confirm",
+    label: "Confirm",
+    style: ButtonStyle.Success
+  }),
+  new ButtonBuilder({
+    customId: "cancel",
+    label: "Cancel",
+    style: ButtonStyle.Danger
+  })
+);
+
+await interaction.reply({ content: "Choose an option", components: [row] });
+```
+
+```ts Select Menu Row
+import { createRow } from "@magicyan/discord";
+import { StringSelectMenuBuilder } from "discord.js";
+
+const row = createRow(
+  new StringSelectMenuBuilder({
+    customId: "role-select",
+    placeholder: "Choose your roles",
+    options: [
+      { label: "Member", value: "member" },
+      { label: "VIP", value: "vip" },
+      { label: "Premium", value: "premium" }
+    ]
+  })
+);
+```
+
+```ts Conditional Components
+import { createRow } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const isAdmin = member.permissions.has("Administrator");
+
+const row = createRow(
+  new ButtonBuilder({ customId: "view", label: "View", style: ButtonStyle.Primary }),
+  isAdmin && new ButtonBuilder({ customId: "edit", label: "Edit", style: ButtonStyle.Secondary }),
+  isAdmin && new ButtonBuilder({ customId: "delete", label: "Delete", style: ButtonStyle.Danger })
+);
+// Admin buttons are automatically excluded for non-admins
+```
+
+</CodeGroup>
+
+---
+
+## createLinkButton
+
+Create a link button component.
+
+```ts
+function createLinkButton(
+  link: string,
+  label?: string,
+  emoji?: ComponentEmojiResolvable
+): ButtonBuilder
+
+function createLinkButton(data: CreateLinkButtonData): ButtonBuilder
+```
+
+<ParamField path="link" type="string" required>
+  The URL the button should link to
+</ParamField>
+
+<ParamField path="label" type="string">
+  Button label text (defaults to the URL)
+</ParamField>
+
+<ParamField path="emoji" type="ComponentEmojiResolvable">
+  Button emoji
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Simple Link
+import { createRow, createLinkButton } from "@magicyan/discord";
+
+const button = createLinkButton(
+  "https://discord.com",
+  "Visit Discord"
+);
+
+const row = createRow(button);
+```
+
+```ts With Emoji
+import { createLinkButton } from "@magicyan/discord";
+
+const button = createLinkButton(
+  "https://github.com",
+  "GitHub",
+  "🔗"
+);
+```
+
+```ts Object Syntax
+import { createLinkButton } from "@magicyan/discord";
+
+const button = createLinkButton({
+  url: "https://example.com",
+  label: "Documentation",
+  emoji: "📚"
+});
+```
+
+</CodeGroup>
+
+---
+
+## wrapButtons
+
+Wrap buttons into multiple action rows with a maximum number of buttons per row.
+
+```ts
+function wrapButtons(
+  maxItemsPerRow: number,
+  ...buttons: (ButtonBuilder | ButtonBuilder[])[]
+): ActionRowBuilder<ButtonBuilder>[]
+```
+
+<ParamField path="maxItemsPerRow" type="number" required>
+  Maximum number of buttons per row (1-5)
+</ParamField>
+
+<ParamField path="buttons" type="ButtonBuilder[]" required>
+  Buttons to wrap into rows
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Wrap Many Buttons
+import { wrapButtons } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const buttons = [
+  new ButtonBuilder({ customId: "1", label: "1", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "2", label: "2", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "3", label: "3", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "4", label: "4", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "5", label: "5", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "6", label: "6", style: ButtonStyle.Primary }),
+];
+
+// Creates 2 rows: [1,2,3,4,5] and [6]
+const rows = wrapButtons(5, ...buttons);
+
+await interaction.reply({ content: "Select a number", components: rows });
+```
+
+```ts Pagination Buttons
+import { wrapButtons } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const pages = Array.from({ length: 10 }, (_, i) => 
+  new ButtonBuilder({
+    customId: `page-${i + 1}`,
+    label: `${i + 1}`,
+    style: ButtonStyle.Secondary
+  })
+);
+
+// 3 buttons per row
+const rows = wrapButtons(3, pages);
+```
+
+</CodeGroup>
+
+---
+
+## createModal
+
+Create a modal (popup form) component.
+
+```ts
+function createModal(customId: string): ModalBuilder
+function createModal(customId: string, title: string): ModalBuilder
+function createModal(
+  customId: string,
+  title: string,
+  ...components: ModalComponents[]
+): ModalBuilder
+function createModal(data: Partial<CreateModalOptions>): ModalBuilder
+```
+
+<ParamField path="customId" type="string" required>
+  Unique identifier for the modal
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Modal title shown at the top
+</ParamField>
+
+<ParamField path="components" type="ModalComponents[]">
+  Modal components (LabelBuilder, TextDisplayBuilder, or string)
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Simple Modal
+import { createModal } from "@magicyan/discord";
+import { TextInputBuilder, TextInputStyle } from "discord.js";
+
+const modal = createModal("feedback-modal", "Send Feedback",
+  new LabelBuilder({
+    label: "Your Feedback",
+    component: new TextInputBuilder({
+      customId: "feedback",
+      style: TextInputStyle.Paragraph,
+      placeholder: "Tell us what you think...",
+      required: true
+    })
+  })
+);
+
+await interaction.showModal(modal);
+```
+
+```ts Multiple Fields
+import { createModal } from "@magicyan/discord";
+import { LabelBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+
+const modal = createModal("bug-report", "Report a Bug",
+  new LabelBuilder({
+    label: "Bug Title",
+    component: new TextInputBuilder({
+      customId: "title",
+      style: TextInputStyle.Short,
+      required: true
+    })
+  }),
+  new LabelBuilder({
+    label: "Description",
+    component: new TextInputBuilder({
+      customId: "description",
+      style: TextInputStyle.Paragraph,
+      placeholder: "Describe the bug in detail",
+      required: true
+    })
+  })
+);
+```
+
+```ts Object Syntax
+import { createModal } from "@magicyan/discord";
+
+const modal = createModal({
+  customId: "application",
+  title: "Application Form",
+  components: [
+    // ... components
+  ]
+});
+```
+
+</CodeGroup>
+
+---
+
+## modalFieldsToRecord
+
+Convert modal submission fields into a plain JavaScript object.
+
+```ts
+function modalFieldsToRecord<T = ModalFieldsRecord>(
+  data: ResolveModalData
+): T
+
+function modalFieldsToRecord<T = ModalFieldsRecord>(
+  data: ResolveModalData,
+  parse: (record: ModalFieldsRecord) => T
+): T
+```
+
+<ParamField path="data" type="ResolveModalData" required>
+  Modal submission data from an interaction
+</ParamField>
+
+<ParamField path="parse" type="Function">
+  Optional parser function to transform the result
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Usage
+import { modalFieldsToRecord } from "@magicyan/discord";
+
+// In modal submit handler
+const fields = modalFieldsToRecord(interaction.fields);
+
+console.log(fields.title);       // "Bug in command"
+console.log(fields.description); // "The command doesn't work"
+```
+
+```ts With Parser
+import { modalFieldsToRecord } from "@magicyan/discord";
+
+const data = modalFieldsToRecord(interaction.fields, fields => ({
+  title: fields.title.trim(),
+  description: fields.description.trim(),
+  priority: Number.parseInt(fields.priority) || 0
+}));
+
+console.log(data.title);       // string
+console.log(data.priority);    // number
+```
+
+```ts Type-Safe Result
+import { modalFieldsToRecord } from "@magicyan/discord";
+
+interface FeedbackData {
+  rating: number;
+  comments: string;
+  email?: string;
+}
+
+const feedback = modalFieldsToRecord<FeedbackData>(
+  interaction.fields,
+  fields => ({
+    rating: Number.parseInt(fields.rating),
+    comments: fields.comments,
+    email: fields.email || undefined
+  })
+);
+```
+
+</CodeGroup>
+
+<Note>
+This function handles different field types:
+- Text inputs → `string`
+- Select menus → `string[]`
+- File uploads → `string[]` of attachment URLs
+</Note>
+
+---
+
+## createTextInput
+
+Create a text input component for modals.
+
+```ts
+function createTextInput(data: CreateInputData): TextInputBuilder
+```
+
+<ParamField path="data" type="CreateInputData" required>
+  Text input configuration (label is not required)
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Short Text Input
+import { createTextInput } from "@magicyan/discord";
+import { TextInputStyle } from "discord.js";
+
+const input = createTextInput({
+  customId: "username",
+  style: TextInputStyle.Short,
+  placeholder: "Enter your username",
+  required: true,
+  minLength: 3,
+  maxLength: 20
+});
+```
+
+```ts Paragraph Input
+import { createTextInput } from "@magicyan/discord";
+import { TextInputStyle } from "discord.js";
+
+const input = createTextInput({
+  customId: "bio",
+  style: TextInputStyle.Paragraph,
+  placeholder: "Tell us about yourself...",
+  required: false,
+  maxLength: 500
+});
+```
+
+</CodeGroup>
+
+---
+
+## createComponents
+
+Create and normalize multiple components for messages, automatically wrapping buttons and select menus in action rows.
+
+```ts
+function createComponents<IsContainer extends boolean = false>(
+  ...data: (ComponentData | ComponentData[])[]
+): ContainerComponentBuilder[]
+```
+
+<ParamField path="data" type="ComponentData[]" required>
+  Components to create. Supports strings, buttons, select menus, attachments, and builder objects. Null, undefined, and boolean values are filtered out.
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Mixed Components
+import { createComponents } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const components = createComponents(
+  "Welcome to the server!",
+  new ButtonBuilder({ customId: "rules", label: "Read Rules", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "roles", label: "Get Roles", style: ButtonStyle.Secondary })
+);
+
+// Buttons are automatically wrapped in ActionRow
+await interaction.reply({ components });
+```
+
+```ts Auto-Wrapping
+import { createComponents } from "@magicyan/discord";
+import { StringSelectMenuBuilder } from "discord.js";
+
+// Select menus are automatically wrapped in rows
+const components = createComponents(
+  new StringSelectMenuBuilder({
+    customId: "language",
+    options: [
+      { label: "English", value: "en" },
+      { label: "Spanish", value: "es" }
+    ]
+  })
+);
+```
+
+```ts With Attachments
+import { createComponents } from "@magicyan/discord";
+import { AttachmentBuilder } from "discord.js";
+
+// Attachments are converted to MediaGalleryBuilder
+const components = createComponents(
+  "Check out these images:",
+  new AttachmentBuilder("./image1.png"),
+  new AttachmentBuilder("./image2.png")
+);
+```
+
+</CodeGroup>

@@ -1,0 +1,528 @@
+---
+title: Server API
+description: Fetch Minecraft server status and information
+---
+
+The Server API module provides functions to query Minecraft server status, player counts, and server icons.
+
+## Server Status
+
+### fetchServerStatus
+
+```typescript
+function fetchServerStatus(
+  ip: string,
+  bedrock?: boolean
+): Promise<ServerInfo>
+```
+
+Fetches detailed status information for a Minecraft server.
+
+<ParamField path="ip" type="string" required>
+  The server IP address or hostname (can include port, e.g., `"play.hypixel.net:25565"`)
+</ParamField>
+
+<ParamField path="bedrock" type="boolean">
+  Set to `true` for Bedrock Edition servers (default: `false`)
+</ParamField>
+
+<ResponseField name="return" type="ServerInfo">
+  Server status information (union type: `OnlineServerInfo | OfflineServerInfo`)
+  
+  <Expandable title="online server">
+    ```typescript
+    {
+      online: true,
+      ip: string,
+      port: number,
+      hostname?: string,
+      version: string,
+      protocol?: {
+        version: number,
+        name?: string
+      },
+      icon?: string,            // Base64 encoded image
+      software?: string,
+      motd: {
+        raw: string[],
+        clean: string[],
+        html: string[]
+      },
+      players: {
+        online: number,
+        max: number,
+        list?: Array<{
+          name: string,
+          uuid: string
+        }>
+      },
+      plugins?: Array<{
+        name: string,
+        version: string
+      }>,
+      mods?: Array<{
+        name: string,
+        version: string
+      }>,
+      debug: ServerDebugInfo
+    }
+    ```
+  </Expandable>
+  
+  <Expandable title="offline server">
+    ```typescript
+    {
+      online: false,
+      ip: string,
+      port: number,
+      hostname?: string,
+      debug: ServerDebugInfo & {
+        error: {
+          ping: string,
+          query: string
+        }
+      }
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Basic Status Check
+import { fetchServerStatus } from "@magicyan/minecraft";
+
+const server = await fetchServerStatus("play.hypixel.net");
+
+if (server.online) {
+  console.log(`Server: ${server.hostname}`);
+  console.log(`Players: ${server.players.online}/${server.players.max}`);
+  console.log(`Version: ${server.version}`);
+  console.log(`MOTD: ${server.motd.clean.join(" ")}`);
+} else {
+  console.log("Server is offline");
+  console.log(`Error: ${server.debug.error.ping}`);
+}
+```
+
+```typescript Discord Server Status Command
+import { fetchServerStatus } from "@magicyan/minecraft";
+import { EmbedBuilder, AttachmentBuilder } from "discord.js";
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.commandName !== "mcserver") return;
+  
+  await interaction.deferReply();
+  
+  const ip = interaction.options.getString("ip", true);
+  const server = await fetchServerStatus(ip);
+  
+  if (!server.online) {
+    await interaction.editReply({ content: `Server \`${ip}\` is offline.` });
+    return;
+  }
+  
+  const embed = new EmbedBuilder()
+    .setTitle(server.hostname ?? ip)
+    .setDescription(server.motd.clean.join("\n"))
+    .addFields(
+      { name: "Players", value: `${server.players.online}/${server.players.max}`, inline: true },
+      { name: "Version", value: server.version, inline: true },
+      { name: "IP", value: `${server.ip}:${server.port}`, inline: true }
+    )
+    .setColor("#00aa00");
+  
+  if (server.software) {
+    embed.addFields({ name: "Software", value: server.software, inline: true });
+  }
+  
+  // Add icon if available
+  const files = [];
+  if (server.icon) {
+    const iconBuffer = Buffer.from(server.icon.split(",")[1], "base64");
+    const attachment = new AttachmentBuilder(iconBuffer, { name: "icon.png" });
+    files.push(attachment);
+    embed.setThumbnail("attachment://icon.png");
+  }
+  
+  await interaction.editReply({ embeds: [embed], files });
+});
+```
+
+```typescript Player List
+import { fetchServerStatus } from "@magicyan/minecraft";
+
+const server = await fetchServerStatus("mc.hypixel.net");
+
+if (server.online && server.players.list) {
+  console.log(`Online Players (${server.players.list.length}):`);
+  
+  for (const player of server.players.list) {
+    console.log(`- ${player.name} (${player.uuid})`);
+  }
+} else if (server.online) {
+  console.log(`${server.players.online} players online (list not available)`);
+}
+```
+
+```typescript Bedrock Server
+import { fetchServerStatus } from "@magicyan/minecraft";
+
+const bedrockServer = await fetchServerStatus("play.cubecraft.net", true);
+
+if (bedrockServer.online) {
+  console.log(`Bedrock Server: ${bedrockServer.hostname}`);
+  console.log(`Gamemode: ${bedrockServer.gamemode}`);
+  console.log(`Map: ${bedrockServer.map?.clean}`);
+}
+```
+
+```typescript Plugin/Mod Detection
+import { fetchServerStatus } from "@magicyan/minecraft";
+
+const server = await fetchServerStatus("my.server.com");
+
+if (server.online) {
+  if (server.plugins && server.plugins.length > 0) {
+    console.log("Plugins:");
+    server.plugins.forEach(plugin => {
+      console.log(`- ${plugin.name} v${plugin.version}`);
+    });
+  }
+  
+  if (server.mods && server.mods.length > 0) {
+    console.log("Mods:");
+    server.mods.forEach(mod => {
+      console.log(`- ${mod.name} v${mod.version}`);
+    });
+  }
+}
+```
+</CodeGroup>
+
+---
+
+## Quick Online Check
+
+### isServerOnline
+
+```typescript
+function isServerOnline(
+  ip: string,
+  bedrock?: boolean
+): Promise<boolean>
+```
+
+Quickly checks if a server is online without fetching full details.
+
+<ParamField path="ip" type="string" required>
+  The server IP address or hostname
+</ParamField>
+
+<ParamField path="bedrock" type="boolean">
+  Set to `true` for Bedrock Edition servers (default: `false`)
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if server is online, `false` otherwise
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Quick Check
+import { isServerOnline } from "@magicyan/minecraft";
+
+const online = await isServerOnline("play.hypixel.net");
+console.log(online ? "Server is online" : "Server is offline");
+```
+
+```typescript Batch Check
+import { isServerOnline } from "@magicyan/minecraft";
+
+const servers = [
+  "play.hypixel.net",
+  "mc.mineplex.com",
+  "play.cubecraft.net",
+];
+
+const statuses = await Promise.all(
+  servers.map(async (ip) => ({
+    ip,
+    online: await isServerOnline(ip),
+  }))
+);
+
+statuses.forEach(({ ip, online }) => {
+  console.log(`${ip}: ${online ? "✅ Online" : "❌ Offline"}`);
+});
+```
+
+```typescript Uptime Monitor
+import { isServerOnline } from "@magicyan/minecraft";
+
+let uptime = 0;
+let downtime = 0;
+
+setInterval(async () => {
+  const online = await isServerOnline("my.server.com");
+  
+  if (online) {
+    uptime++;
+    console.log(`Server online (${uptime} checks)`);
+  } else {
+    downtime++;
+    console.log(`Server offline (${downtime} checks)`);
+  }
+}, 60000); // Check every minute
+```
+</CodeGroup>
+
+---
+
+## Server Icons
+
+### fetchServerIcon
+
+```typescript
+function fetchServerIcon(ip: string): Promise<FetchServerIconResult>
+```
+
+Fetches a server's icon as a PNG image.
+
+<ParamField path="ip" type="string" required>
+  The server IP address or hostname
+</ParamField>
+
+<ResponseField name="return" type="FetchServerIconResult">
+  Result object containing icon data or error information
+  
+  <Expandable title="success response">
+    ```typescript
+    {
+      success: true,
+      data: {
+        buffer: Buffer,      // PNG image buffer
+        url: string,         // Icon URL
+        response: Response   // Raw fetch response
+      }
+    }
+    ```
+  </Expandable>
+  
+  <Expandable title="error response">
+    ```typescript
+    {
+      success: false,
+      error: string,
+      code: number
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Save Icon to File
+import { fetchServerIcon } from "@magicyan/minecraft";
+import { writeFileSync } from "fs";
+
+const result = await fetchServerIcon("play.hypixel.net");
+
+if (result.success) {
+  writeFileSync("server-icon.png", result.data.buffer);
+  console.log("Icon saved!");
+} else {
+  console.error(`Failed to fetch icon: ${result.error}`);
+}
+```
+
+```typescript Discord Attachment
+import { fetchServerIcon } from "@magicyan/minecraft";
+import { AttachmentBuilder } from "discord.js";
+
+const iconResult = await fetchServerIcon("mc.hypixel.net");
+
+if (iconResult.success) {
+  const attachment = new AttachmentBuilder(iconResult.data.buffer, {
+    name: "server-icon.png"
+  });
+  
+  await interaction.reply({
+    content: "Server Icon:",
+    files: [attachment]
+  });
+}
+```
+
+```typescript Canvas Integration
+import { fetchServerIcon } from "@magicyan/minecraft";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 200);
+const ctx = canvas.getContext("2d");
+
+const iconResult = await fetchServerIcon("play.hypixel.net");
+
+if (iconResult.success) {
+  const icon = await loadImage(iconResult.data.buffer);
+  ctx.drawImage(icon, 10, 10, 64, 64);
+  
+  // Draw server info text
+  ctx.font = "24px Arial";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText("Hypixel Network", 90, 40);
+}
+```
+</CodeGroup>
+
+---
+
+## Types
+
+### OnlineServerInfo
+
+```typescript
+interface OnlineServerInfo {
+  online: true;
+  ip: string;
+  port: number;
+  hostname?: string;
+  version: string;
+  protocol?: {
+    version: number;
+    name?: string;
+  };
+  icon?: string;
+  software?: string;
+  motd: {
+    raw: string[];
+    clean: string[];
+    html: string[];
+  };
+  players: {
+    online: number;
+    max: number;
+    list?: Array<{
+      name: string;
+      uuid: string;
+    }>;
+  };
+  plugins?: Array<{
+    name: string;
+    version: string;
+  }>;
+  mods?: Array<{
+    name: string;
+    version: string;
+  }>;
+  debug: ServerDebugInfo;
+}
+```
+
+### OfflineServerInfo
+
+```typescript
+interface OfflineServerInfo {
+  online: false;
+  ip: string;
+  port: number;
+  hostname?: string;
+  debug: ServerDebugInfo & {
+    error: {
+      ping: string;
+      query: string;
+    };
+  };
+}
+```
+
+### ServerDebugInfo
+
+```typescript
+interface ServerDebugInfo {
+  ping: boolean;
+  query: boolean;
+  bedrock: boolean;
+  srv: boolean;
+  querymismatch: boolean;
+  ipinsrv: boolean;
+  cnameinsrv: boolean;
+  animatedmotd: boolean;
+  cachehit: boolean;
+  cachetime: number;
+  cacheexpire: number;
+  apiversion: number;
+}
+```
+
+---
+
+## API Endpoint
+
+This module uses the mcsrvstat.us API:
+
+- **Java Edition**: `https://api.mcsrvstat.us/3/{ip}`
+- **Bedrock Edition**: `https://api.mcsrvstat.us/bedrock/3/{ip}`
+- **Simple Check**: `https://api.mcsrvstat.us/simple/{ip}`
+- **Icon**: `https://api.mcsrvstat.us/icon/{ip}`
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Type guard for online status">
+    Always check the `online` property before accessing online-only fields:
+    ```typescript
+    const server = await fetchServerStatus(ip);
+    
+    if (server.online) {
+      // TypeScript knows these fields exist
+      console.log(server.version);
+      console.log(server.players.online);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Cache server data">
+    Cache server status to reduce API calls:
+    ```typescript
+    const cache = new Map<string, { data: ServerInfo, expires: number }>();
+    
+    async function getCachedServerStatus(ip: string) {
+      const now = Date.now();
+      const cached = cache.get(ip);
+      
+      if (cached && cached.expires > now) {
+        return cached.data;
+      }
+      
+      const data = await fetchServerStatus(ip);
+      cache.set(ip, { data, expires: now + 60000 }); // 1 min cache
+      return data;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle server icons gracefully">
+    Not all servers have icons. Always check before using:
+    ```typescript
+    if (server.online && server.icon) {
+      const iconData = server.icon.split(",")[1]; // Remove data:image/png;base64,
+      const buffer = Buffer.from(iconData, "base64");
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use isServerOnline for health checks">
+    For simple up/down monitoring, use `isServerOnline` instead of full status:
+    ```typescript
+    // Faster and more efficient for simple checks
+    const online = await isServerOnline("my.server.com");
+    ```
+  </Accordion>
+</AccordionGroup>

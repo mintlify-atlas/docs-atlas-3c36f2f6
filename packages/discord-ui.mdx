@@ -1,0 +1,382 @@
+---
+title: "@magicyan/discord-ui"
+description: "Interactive UI components for Discord bots including menus and prompts"
+---
+
+## Overview
+
+`@magicyan/discord-ui` provides pre-built interactive UI components for Discord bots. Create pagination menus, confirmation prompts, and multi-view interfaces with minimal code.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/discord-ui
+```
+
+```bash yarn
+yarn add @magicyan/discord-ui
+```
+
+```bash pnpm
+pnpm add @magicyan/discord-ui
+```
+</CodeGroup>
+
+<Note>
+  This package has no dependencies on other Magicyan packages and works with any Discord.js bot.
+</Note>
+
+## Setup
+
+Configure global settings (optional):
+
+```typescript
+import { discordUI } from '@magicyan/discord-ui';
+
+// Set global defaults
+discordUI({
+  timeout: 60000, // 1 minute default timeout
+  ephemeral: true, // Make responses ephemeral by default
+});
+```
+
+## Components
+
+### Confirmation Prompts
+
+Create yes/no confirmation dialogs:
+
+```typescript
+import { confirm } from '@magicyan/discord-ui';
+
+const confirmed = await confirm({
+  interaction,
+  title: 'Delete Channel',
+  description: 'Are you sure you want to delete this channel?',
+  confirmText: 'Delete',
+  cancelText: 'Cancel',
+  danger: true, // Makes confirm button red
+});
+
+if (confirmed) {
+  await channel.delete();
+  await interaction.editReply('Channel deleted!');
+} else {
+  await interaction.editReply('Cancelled.');
+}
+```
+
+[View Prompts API →](/api/discord-ui/prompts)
+
+### Pagination Menus
+
+Create paginated content with navigation buttons:
+
+```typescript
+import { pagination } from '@magicyan/discord-ui';
+import { EmbedBuilder } from 'discord.js';
+
+const members = await guild.members.fetch();
+const pages = members.map((member, index) => {
+  return new EmbedBuilder()
+    .setTitle(`Member ${index + 1}/${members.size}`)
+    .setDescription(member.user.tag)
+    .setThumbnail(member.displayAvatarURL())
+    .addFields(
+      { name: 'Joined', value: member.joinedAt?.toLocaleDateString() || 'Unknown' },
+      { name: 'Roles', value: member.roles.cache.map(r => r.name).join(', ') }
+    );
+});
+
+await pagination({
+  interaction,
+  embeds: pages,
+  timeout: 120000, // 2 minutes
+  ephemeral: true,
+});
+```
+
+[View Menus API →](/api/discord-ui/menus)
+
+### Multi-Menu
+
+Create interfaces with multiple switchable views:
+
+```typescript
+import { multimenu } from '@magicyan/discord-ui';
+import { EmbedBuilder } from 'discord.js';
+
+const menu = await multimenu({
+  interaction,
+  data: {
+    home: {
+      embed: new EmbedBuilder()
+        .setTitle('Server Info')
+        .setDescription('Welcome to the server dashboard'),
+      actions: [
+        { customId: 'members', label: 'View Members', emoji: '👥' },
+        { customId: 'channels', label: 'View Channels', emoji: '💬' },
+      ]
+    },
+    members: {
+      embed: new EmbedBuilder()
+        .setTitle('Server Members')
+        .setDescription(`Total members: ${guild.memberCount}`),
+      actions: [
+        { customId: 'home', label: 'Back', emoji: '🏠' },
+      ]
+    },
+    channels: {
+      embed: new EmbedBuilder()
+        .setTitle('Server Channels')
+        .setDescription(`Total channels: ${guild.channels.cache.size}`),
+      actions: [
+        { customId: 'home', label: 'Back', emoji: '🏠' },
+      ]
+    },
+  },
+  startId: 'home',
+  timeout: 180000, // 3 minutes
+});
+```
+
+[View Menus API →](/api/discord-ui/menus)
+
+## Features
+
+### Automatic Timeout Handling
+
+All components automatically handle timeouts:
+
+```typescript
+await pagination({
+  interaction,
+  embeds: pages,
+  timeout: 60000,
+  onTimeout: async (interaction) => {
+    await interaction.editReply({ 
+      content: 'This menu has expired.',
+      components: [] 
+    });
+  }
+});
+```
+
+### Ephemeral Responses
+
+Make responses visible only to the user:
+
+```typescript
+await confirm({
+  interaction,
+  title: 'Private Action',
+  description: 'Only you can see this',
+  ephemeral: true, // Only visible to the user
+});
+```
+
+### Custom Styling
+
+Customize button styles and colors:
+
+```typescript
+import { confirm } from '@magicyan/discord-ui';
+import { ButtonStyle } from 'discord.js';
+
+const result = await confirm({
+  interaction,
+  title: 'Confirm',
+  confirmText: 'Yes',
+  cancelText: 'No',
+  danger: true, // Red confirm button
+});
+```
+
+### User Filtering
+
+Restrict who can interact with components:
+
+```typescript
+await pagination({
+  interaction,
+  embeds: pages,
+  filter: (i) => i.user.id === interaction.user.id, // Only command author
+});
+```
+
+## Usage Examples
+
+### Help Command with Pagination
+
+```typescript
+import { SlashCommandBuilder } from 'discord.js';
+import { pagination } from '@magicyan/discord-ui';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Show help pages'),
+  
+  async execute(interaction) {
+    const pages = [
+      new EmbedBuilder()
+        .setTitle('Help - General Commands')
+        .setDescription('Basic bot commands')
+        .addFields(
+          { name: '/help', value: 'Show this help menu' },
+          { name: '/info', value: 'Bot information' }
+        ),
+      new EmbedBuilder()
+        .setTitle('Help - Moderation')
+        .setDescription('Moderation commands')
+        .addFields(
+          { name: '/kick', value: 'Kick a member' },
+          { name: '/ban', value: 'Ban a member' }
+        ),
+      new EmbedBuilder()
+        .setTitle('Help - Utility')
+        .setDescription('Utility commands')
+        .addFields(
+          { name: '/avatar', value: 'Show user avatar' },
+          { name: '/serverinfo', value: 'Server information' }
+        ),
+    ];
+
+    await pagination({
+      interaction,
+      embeds: pages,
+      timeout: 120000,
+    });
+  }
+};
+```
+
+### Confirmation for Destructive Actions
+
+```typescript
+import { SlashCommandBuilder } from 'discord.js';
+import { confirm } from '@magicyan/discord-ui';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('purge')
+    .setDescription('Delete messages')
+    .addIntegerOption(opt => 
+      opt.setName('amount')
+        .setDescription('Number of messages to delete')
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(100)
+    ),
+  
+  async execute(interaction) {
+    const amount = interaction.options.getInteger('amount', true);
+
+    const confirmed = await confirm({
+      interaction,
+      title: 'Confirm Purge',
+      description: `Delete ${amount} messages?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      danger: true,
+      ephemeral: true,
+    });
+
+    if (!confirmed) {
+      return interaction.editReply('Cancelled.');
+    }
+
+    await interaction.channel.bulkDelete(amount);
+    await interaction.editReply(`Deleted ${amount} messages.`);
+  }
+};
+```
+
+### Server Dashboard with Multi-Menu
+
+```typescript
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { multimenu } from '@magicyan/discord-ui';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('dashboard')
+    .setDescription('Server dashboard'),
+  
+  async execute(interaction) {
+    const { guild } = interaction;
+    if (!guild) return;
+
+    await multimenu({
+      interaction,
+      data: {
+        main: {
+          embed: new EmbedBuilder()
+            .setTitle(`${guild.name} Dashboard`)
+            .setDescription('Select a category to view details')
+            .setThumbnail(guild.iconURL()),
+          actions: [
+            { customId: 'stats', label: 'Statistics', emoji: '📊' },
+            { customId: 'members', label: 'Members', emoji: '👥' },
+            { customId: 'roles', label: 'Roles', emoji: '🎭' },
+          ]
+        },
+        stats: {
+          embed: new EmbedBuilder()
+            .setTitle('Server Statistics')
+            .addFields(
+              { name: 'Members', value: guild.memberCount.toString(), inline: true },
+              { name: 'Channels', value: guild.channels.cache.size.toString(), inline: true },
+              { name: 'Roles', value: guild.roles.cache.size.toString(), inline: true },
+              { name: 'Emojis', value: guild.emojis.cache.size.toString(), inline: true },
+            ),
+          actions: [
+            { customId: 'main', label: 'Back', emoji: '⬅️' },
+          ]
+        },
+        members: {
+          embed: new EmbedBuilder()
+            .setTitle('Server Members')
+            .setDescription(`Total: ${guild.memberCount} members`),
+          actions: [
+            { customId: 'main', label: 'Back', emoji: '⬅️' },
+          ]
+        },
+        roles: {
+          embed: new EmbedBuilder()
+            .setTitle('Server Roles')
+            .setDescription(
+              guild.roles.cache
+                .filter(r => r.id !== guild.id)
+                .map(r => r.name)
+                .join(', ')
+            ),
+          actions: [
+            { customId: 'main', label: 'Back', emoji: '⬅️' },
+          ]
+        },
+      },
+      startId: 'main',
+      timeout: 300000, // 5 minutes
+    });
+  }
+};
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Menus API" icon="grid" href="/api/discord-ui/menus">
+    Explore pagination and multimenu APIs
+  </Card>
+  <Card title="Prompts API" icon="check" href="/api/discord-ui/prompts">
+    Learn about confirmation prompts
+  </Card>
+  <Card title="UI Guide" icon="book" href="/guides/ui-components">
+    Complete tutorial with examples
+  </Card>
+  <Card title="Discord Package" icon="discord" href="/packages/discord">
+    Combine with Discord helpers
+  </Card>
+</CardGroup>

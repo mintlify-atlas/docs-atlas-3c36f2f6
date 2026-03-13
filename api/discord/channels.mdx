@@ -1,0 +1,153 @@
+---
+title: Channels
+description: Functions for finding and working with Discord channels
+---
+
+## findChannel
+
+Find channels in a guild with various filtering options.
+
+```ts
+function findChannel<Type extends GuildChannelType = ChannelType.GuildText>(
+  guild: Guild,
+  type?: Type
+): ChannelFinder<Type>
+```
+
+<ParamField path="guild" type="Guild" required>
+  The Discord guild to search in
+</ParamField>
+
+<ParamField path="type" type="GuildChannelType">
+  The channel type to filter by (defaults to `ChannelType.GuildText`)
+</ParamField>
+
+### Return Value
+
+Returns an object with the following methods:
+
+<ResponseField name="byId" type="(id: string) => Channel | undefined">
+  Find a channel by its ID
+</ResponseField>
+
+<ResponseField name="byName" type="(name: string, filter?) => Channel | undefined">
+  Find a channel by name with optional additional filter function
+</ResponseField>
+
+<ResponseField name="byFilter" type="(filter: Function) => Channel | undefined">
+  Find a channel using a custom filter function
+</ResponseField>
+
+<ResponseField name="inCategoryId" type="(id: string) => CategoryFinder">
+  Search for channels within a specific category by category ID. Returns an object with `byId`, `byName`, and `byFilter` methods.
+</ResponseField>
+
+<ResponseField name="inCategoryName" type="(name: string) => CategoryFinder">
+  Search for channels within a specific category by category name. Returns an object with `byId`, `byName`, and `byFilter` methods.
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Usage
+import { findChannel } from "@magicyan/discord";
+import { ChannelType } from "discord.js";
+
+// Find text channel by name
+const general = findChannel(guild).byName("general");
+
+// Find voice channel by ID
+const voice = findChannel(guild, ChannelType.GuildVoice).byId("123456789");
+
+// Find channel with custom filter
+const channel = findChannel(guild).byFilter(c => c.name.startsWith("log-"));
+```
+
+```ts Category Search
+import { findChannel } from "@magicyan/discord";
+
+// Find channel in category by category ID
+const channel = findChannel(guild)
+  .inCategoryId("987654321")
+  .byName("announcements");
+
+// Find channel in category by category name
+const support = findChannel(guild)
+  .inCategoryName("Support")
+  .byName("ticket-1");
+```
+
+```ts With Additional Filter
+import { findChannel } from "@magicyan/discord";
+
+// Find channel by name with additional filtering
+const channel = findChannel(guild).byName(
+  "general",
+  c => c.permissionsFor(member)?.has("ViewChannel")
+);
+```
+
+</CodeGroup>
+
+---
+
+## getChannelUrlInfo
+
+Extract channel and guild IDs from a Discord channel URL.
+
+```ts
+function getChannelUrlInfo(url: string): ChannelUrlInfo
+```
+
+<ParamField path="url" type="string" required>
+  A Discord channel URL in the format `https://discord.com/channels/{guildId}/{channelId}`
+</ParamField>
+
+### Return Value
+
+<ResponseField name="channelId" type="string | undefined">
+  The channel ID extracted from the URL
+</ResponseField>
+
+<ResponseField name="guildId" type="string | undefined">
+  The guild ID extracted from the URL
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Usage
+import { getChannelUrlInfo } from "@magicyan/discord";
+
+const url = "https://discord.com/channels/123456789/987654321";
+const { channelId, guildId } = getChannelUrlInfo(url);
+
+console.log(channelId); // "987654321"
+console.log(guildId);   // "123456789"
+```
+
+```ts Invalid URL
+import { getChannelUrlInfo } from "@magicyan/discord";
+
+const url = "https://example.com/invalid";
+const { channelId, guildId } = getChannelUrlInfo(url);
+
+console.log(channelId); // undefined
+console.log(guildId);   // undefined
+```
+
+```ts Fetch Channel from URL
+import { getChannelUrlInfo } from "@magicyan/discord";
+
+const url = "https://discord.com/channels/123456789/987654321";
+const { channelId } = getChannelUrlInfo(url);
+
+if (channelId) {
+  const channel = await guild.channels.fetch(channelId);
+  // Work with the channel
+}
+```
+
+</CodeGroup>

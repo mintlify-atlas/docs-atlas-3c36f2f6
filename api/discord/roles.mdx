@@ -1,0 +1,129 @@
+---
+title: Roles
+description: Functions for finding and working with Discord roles
+---
+
+## findRole
+
+Find roles in a guild using various search criteria.
+
+```ts
+function findRole(guild: Guild): RoleFinder
+```
+
+<ParamField path="guild" type="Guild" required>
+  The Discord guild to search in
+</ParamField>
+
+### Return Value
+
+Returns an object with the following methods:
+
+<ResponseField name="byColor" type="(color: number, filter?) => Role | undefined">
+  Find a role by its color value with optional additional filter
+</ResponseField>
+
+<ResponseField name="byHexColor" type="(hexColor: string, filter?) => Role | undefined">
+  Find a role by its hex color string (e.g., `"#ff5454"`) with optional additional filter
+</ResponseField>
+
+<ResponseField name="byName" type="(name: string, filter?) => Role | undefined">
+  Find a role by its name with optional additional filter
+</ResponseField>
+
+<ResponseField name="byId" type="(id: string) => Role | undefined">
+  Find a role by its ID
+</ResponseField>
+
+<ResponseField name="byFilter" type="(filter: Function) => Role | undefined">
+  Find a role using a custom filter function
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Search
+import { findRole } from "@magicyan/discord";
+
+// Find by name
+const memberRole = findRole(guild).byName("Member");
+
+// Find by hex color
+const adminRole = findRole(guild).byHexColor("#ff5454");
+
+// Find by ID (fastest)
+const leaderRole = findRole(guild).byId("537818031728885771");
+```
+
+```ts Color Search
+import { findRole } from "@magicyan/discord";
+
+// Find by hex color
+const redRole = findRole(guild).byHexColor("#FF0000");
+
+// Find by color number
+const blueRole = findRole(guild).byColor(0x0000FF);
+
+// Find colored role with additional filter
+const highestRed = findRole(guild).byHexColor(
+  "#FF0000",
+  role => role.position > 10
+);
+```
+
+```ts With Additional Filter
+import { findRole } from "@magicyan/discord";
+
+// Find role by name with permission check
+const modRole = findRole(guild).byName(
+  "Moderator",
+  role => role.permissions.has("ModerateMembers")
+);
+
+// Find role by color with position requirement
+const seniorRole = findRole(guild).byHexColor(
+  "#FFD700",
+  role => role.position >= 5
+);
+```
+
+```ts Custom Filter
+import { findRole } from "@magicyan/discord";
+
+// Find highest role
+const highestRole = findRole(guild).byFilter(
+  role => role.position === Math.max(...guild.roles.cache.map(r => r.position))
+);
+
+// Find mentionable roles
+const mentionableRole = findRole(guild).byFilter(
+  role => role.mentionable && !role.managed
+);
+
+// Find roles with specific permissions
+const adminRole = findRole(guild).byFilter(
+  role => role.permissions.has(["Administrator", "ManageGuild"])
+);
+```
+
+```ts Assign Found Roles
+import { findRole } from "@magicyan/discord";
+
+const memberRole = findRole(guild).byName("Member");
+const vipRole = findRole(guild).byName("VIP");
+
+if (memberRole && vipRole) {
+  await member.roles.add([memberRole, vipRole]);
+}
+```
+
+</CodeGroup>
+
+<Note>
+The `byId` method is the fastest way to find a role as it uses cache.get() directly. Other methods iterate through the cache.
+</Note>
+
+<Tip>
+Color values can be specified as hex strings (`"#FF0000"`) with `byHexColor` or as numbers (`0xFF0000`) with `byColor`.
+</Tip>

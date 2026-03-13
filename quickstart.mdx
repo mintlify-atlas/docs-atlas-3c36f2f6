@@ -1,80 +1,474 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Build your first Discord bot with Magicyan in minutes
 ---
 
-## Get started in three steps
+## Overview
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through creating a fully functional Discord bot using Magicyan. You'll learn how to:
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+- Set up a Discord bot with custom intents
+- Create commands with slash command handlers
+- Use Magicyan helpers for channels, embeds, and messages
+- Handle interactions with simplified APIs
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+Make sure you've completed the [installation](/installation) before continuing.
 </Note>
+
+## Prerequisites
+
+Before you begin, you'll need:
+
+1. A Discord Bot Token from the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Node.js 18+ installed
+3. Magicyan packages installed
+
+## Project Setup
+
+<Steps>
+  <Step title="Create your project structure">
+    Create a new directory and initialize your project:
+
+    ```bash
+    mkdir my-discord-bot
+    cd my-discord-bot
+    npm init -y
+    ```
+
+    Set up the file structure:
+
+    ```bash
+    mkdir src
+    touch src/index.ts
+    touch .env
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install the required packages:
+
+    <CodeGroup>
+    ```bash npm
+    npm install discord.js @magicyan/discord @magicyan/discord-events
+    npm install -D typescript tsx @types/node
+    ```
+
+    ```bash yarn
+    yarn add discord.js @magicyan/discord @magicyan/discord-events
+    yarn add -D typescript tsx @types/node
+    ```
+
+    ```bash pnpm
+    pnpm add discord.js @magicyan/discord @magicyan/discord-events
+    pnpm add -D typescript tsx @types/node
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure TypeScript">
+    Create a `tsconfig.json` file:
+
+    ```json tsconfig.json
+    {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "outDir": "./dist",
+        "rootDir": "./src"
+      },
+      "include": ["src/**/*"]
+    }
+    ```
+  </Step>
+
+  <Step title="Add environment variables">
+    Create a `.env` file with your bot token:
+
+    ```bash .env
+    BOT_TOKEN=your_discord_bot_token_here
+    ```
+
+    <Warning>
+    Never commit your `.env` file to version control. Add it to `.gitignore`.
+    </Warning>
+  </Step>
+
+  <Step title="Update package.json">
+    Add scripts and set module type:
+
+    ```json package.json
+    {
+      "name": "my-discord-bot",
+      "version": "1.0.0",
+      "type": "module",
+      "scripts": {
+        "dev": "tsx src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js"
+      }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Create Your Bot
+
+<Steps>
+  <Step title="Initialize the Discord client">
+    Create your bot with Magicyan's custom intents:
+
+    ```typescript src/index.ts
+    import { Client } from "discord.js";
+    import { CustomItents } from "@magicyan/discord";
+    import { initDiscordEvents } from "@magicyan/discord-events";
+
+    // Create client with all intents
+    const client = new Client({
+      intents: CustomItents.All
+    });
+
+    // Initialize extended events
+    initDiscordEvents(client);
+    ```
+
+    <Tip>
+    `CustomItents.All` includes all available intents. For production, use specific intents like `CustomItents.Guild` or `CustomItents.Messages` to reduce memory usage.
+    </Tip>
+  </Step>
+
+  <Step title="Handle the ready event">
+    Add a handler for when your bot comes online:
+
+    ```typescript src/index.ts
+    client.on("ready", (client) => {
+      console.log(`✅ ${client.user.username} is online!`);
+      
+      // Register a test slash command
+      client.application.commands.set([
+        {
+          name: "hello",
+          description: "Say hello to the bot"
+        },
+        {
+          name: "info",
+          description: "Get bot information"
+        }
+      ]);
+    });
+    ```
+  </Step>
+
+  <Step title="Create slash command handlers">
+    Handle slash commands using Magicyan's helpers:
+
+    ```typescript src/index.ts
+    import { createEmbed, findChannel } from "@magicyan/discord";
+    import { ChannelType } from "discord.js";
+
+    client.on("interactionCreate", async (interaction) => {
+      // Handle slash commands
+      if (!interaction.isChatInputCommand()) return;
+
+      switch (interaction.commandName) {
+        case "hello": {
+          // Create a rich embed using Magicyan
+          const embed = createEmbed({
+            title: "👋 Hello!",
+            description: [
+              "Welcome to Magicyan!",
+              "I'm a Discord bot built with the Magicyan SDK.",
+              "",
+              "Try the `/info` command to learn more!"
+            ],
+            color: "#5865F2",
+            timestamp: true,
+            footer: "Powered by Magicyan"
+          });
+
+          await interaction.reply({ embeds: [embed] });
+          break;
+        }
+
+        case "info": {
+          const guild = interaction.guild;
+          if (!guild) return;
+
+          // Use Magicyan's channel finder
+          const textChannels = guild.channels.cache.filter(
+            c => c.type === ChannelType.GuildText
+          );
+
+          const embed = createEmbed({
+            title: "📊 Bot Information",
+            color: "#00FF00",
+            fields: [
+              {
+                name: "Server Name",
+                value: guild.name,
+                inline: true
+              },
+              {
+                name: "Member Count",
+                value: `${guild.memberCount} members`,
+                inline: true
+              },
+              {
+                name: "Text Channels",
+                value: `${textChannels.size} channels`,
+                inline: true
+              },
+              {
+                name: "Bot Latency",
+                value: `${client.ws.ping}ms`,
+                inline: true
+              }
+            ],
+            timestamp: true,
+            footer: { text: `Requested by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() }
+          });
+
+          await interaction.reply({ embeds: [embed] });
+          break;
+        }
+      }
+    });
+    ```
+  </Step>
+
+  <Step title="Use extended events">
+    Listen to Magicyan's extended Discord events:
+
+    ```typescript src/index.ts
+    // Handle member timeout events
+    client.on("guildMemberTimeoutAdd", (member, timeout) => {
+      console.log(`⏰ ${member.user.tag} was timed out until ${timeout.timeout}`);
+    });
+
+    client.on("guildMemberTimeoutRemove", (member) => {
+      console.log(`✅ Timeout removed for ${member.user.tag}`);
+    });
+
+    // Handle voice events
+    client.on("guildMemberConnect", (member, channel) => {
+      console.log(`🔊 ${member.user.tag} joined ${channel.name}`);
+    });
+
+    client.on("guildMemberDisconnect", (member, channel) => {
+      console.log(`🔇 ${member.user.tag} left ${channel.name}`);
+    });
+
+    // Handle kick/ban events
+    client.on("userKick", (user, guild, executor) => {
+      console.log(`👢 ${user.tag} was kicked from ${guild.name}`);
+    });
+    ```
+
+    <Info>
+    These extended events are provided by `@magicyan/discord-events` and automatically detect moderation actions from audit logs.
+    </Info>
+  </Step>
+
+  <Step title="Login to Discord">
+    Finally, log in with your bot token:
+
+    ```typescript src/index.ts
+    // Login to Discord
+    client.login(process.env.BOT_TOKEN);
+    ```
+  </Step>
+</Steps>
+
+## Complete Example
+
+Here's the complete bot code:
+
+```typescript src/index.ts
+import { Client, ChannelType } from "discord.js";
+import { CustomItents, createEmbed, findChannel } from "@magicyan/discord";
+import { initDiscordEvents } from "@magicyan/discord-events";
+
+// Create client with all intents
+const client = new Client({
+  intents: CustomItents.All
+});
+
+// Initialize extended events
+initDiscordEvents(client);
+
+// Bot ready event
+client.on("ready", (client) => {
+  console.log(`✅ ${client.user.username} is online!`);
+  
+  // Register slash commands
+  client.application.commands.set([
+    {
+      name: "hello",
+      description: "Say hello to the bot"
+    },
+    {
+      name: "info",
+      description: "Get bot information"
+    }
+  ]);
+});
+
+// Slash command handler
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  switch (interaction.commandName) {
+    case "hello": {
+      const embed = createEmbed({
+        title: "👋 Hello!",
+        description: [
+          "Welcome to Magicyan!",
+          "I'm a Discord bot built with the Magicyan SDK.",
+          "",
+          "Try the `/info` command to learn more!"
+        ],
+        color: "#5865F2",
+        timestamp: true,
+        footer: "Powered by Magicyan"
+      });
+
+      await interaction.reply({ embeds: [embed] });
+      break;
+    }
+
+    case "info": {
+      const guild = interaction.guild;
+      if (!guild) return;
+
+      const textChannels = guild.channels.cache.filter(
+        c => c.type === ChannelType.GuildText
+      );
+
+      const embed = createEmbed({
+        title: "📊 Bot Information",
+        color: "#00FF00",
+        fields: [
+          {
+            name: "Server Name",
+            value: guild.name,
+            inline: true
+          },
+          {
+            name: "Member Count",
+            value: `${guild.memberCount} members`,
+            inline: true
+          },
+          {
+            name: "Text Channels",
+            value: `${textChannels.size} channels`,
+            inline: true
+          },
+          {
+            name: "Bot Latency",
+            value: `${client.ws.ping}ms`,
+            inline: true
+          }
+        ],
+        timestamp: true,
+        footer: { text: `Requested by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() }
+      });
+
+      await interaction.reply({ embeds: [embed] });
+      break;
+    }
+  }
+});
+
+// Extended events
+client.on("guildMemberTimeoutAdd", (member, timeout) => {
+  console.log(`⏰ ${member.user.tag} was timed out`);
+});
+
+client.on("guildMemberConnect", (member, channel) => {
+  console.log(`🔊 ${member.user.tag} joined ${channel.name}`);
+});
+
+// Login
+client.login(process.env.BOT_TOKEN);
+```
+
+## Run Your Bot
+
+Start your bot in development mode:
+
+```bash
+npm run dev
+```
+
+You should see:
+
+```
+✅ YourBotName is online!
+```
+
+## Test Your Bot
+
+1. Invite your bot to a Discord server
+2. Use the `/hello` command to see a welcome message
+3. Use the `/info` command to see server information
+4. Check your console for extended event logs when members join voice channels or are moderated
+
+## What's Next?
+
+Congratulations! You've built your first Discord bot with Magicyan. Here are some next steps:
+
+<CardGroup cols={2}>
+  <Card title="Discord Package" icon="discord" href="/packages/discord">
+    Explore channel, message, and embed helpers
+  </Card>
+  
+  <Card title="Extended Events" icon="bolt" href="/packages/discord-events">
+    Learn about all available extended events
+  </Card>
+  
+  <Card title="UI Components" icon="palette" href="/packages/discord-ui">
+    Build interactive components and modals
+  </Card>
+  
+  <Card title="Core Utilities" icon="code" href="/packages/core">
+    Use utility functions for validation and formatting
+  </Card>
+</CardGroup>
+
+## Tips for Production
+
+<Tip>
+**Use specific intents** - Instead of `CustomItents.All`, use only what you need:
+
+```typescript
+const client = new Client({
+  intents: [
+    ...CustomItents.Guild,
+    ...CustomItents.Messages
+  ]
+});
+```
+</Tip>
+
+<Tip>
+**Handle errors gracefully** - Add error handlers:
+
+```typescript
+client.on("error", (error) => {
+  console.error("Client error:", error);
+});
+
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled rejection:", error);
+});
+```
+</Tip>
+
+<Tip>
+**Use environment variables** - Never hardcode sensitive data like tokens.
+</Tip>

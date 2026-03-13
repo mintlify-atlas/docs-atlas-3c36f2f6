@@ -1,122 +1,123 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Magicyan",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#7c7c7c",
+    "light": "#070707",
+    "dark": "#c4c4c4"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/86ecbf31-4bee-426a-a198-fa97a033396c.png",
+  "logo": {
+    "light": "https://media.brand.dev/1f1e4836-c9b0-4d21-a221-1411146261a9.svg",
+    "dark": "https://media.brand.dev/862e10d4-beb2-49d1-91ee-e52387c286bd.png"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/rinckodev/magicyan"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/rinckodev/magicyan"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Packages",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "packages/overview",
+              "packages/core",
+              "packages/discord",
+              "packages/discord-events",
+              "packages/discord-ui",
+              "packages/canvas",
+              "packages/minecraft"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/discord-bot-setup",
+              "guides/custom-events",
+              "guides/ui-components",
+              "guides/canvas-rendering"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Core",
             "pages": [
-              "api-reference/introduction"
+              "api/core/format",
+              "api/core/validation",
+              "api/core/timers",
+              "api/core/date",
+              "api/core/math",
+              "api/core/convert"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Discord",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/discord/channels",
+              "api/discord/members",
+              "api/discord/roles",
+              "api/discord/embeds",
+              "api/discord/components",
+              "api/discord/messages"
+            ]
+          },
+          {
+            "group": "Discord Events",
+            "pages": [
+              "api/discord-events/setup",
+              "api/discord-events/member-events",
+              "api/discord-events/role-events",
+              "api/discord-events/channel-events",
+              "api/discord-events/user-events"
+            ]
+          },
+          {
+            "group": "Discord UI",
+            "pages": [
+              "api/discord-ui/menus",
+              "api/discord-ui/prompts"
+            ]
+          },
+          {
+            "group": "Canvas",
+            "pages": [
+              "api/canvas/canvas-builder",
+              "api/canvas/utilities"
+            ]
+          },
+          {
+            "group": "Minecraft",
+            "pages": [
+              "api/minecraft/mojang",
+              "api/minecraft/server",
+              "api/minecraft/skins"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

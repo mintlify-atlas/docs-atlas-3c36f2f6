@@ -1,0 +1,181 @@
+---
+title: "Packages Overview"
+description: "Explore all Magicyan packages and choose the right tools for your Discord bot"
+---
+
+## Available Packages
+
+Magicyan is a monorepo containing 6 specialized packages for Discord bot development. Each package serves a specific purpose and can be used independently or together.
+
+<CardGroup cols={2}>
+  <Card title="@magicyan/core" icon="wrench" href="/packages/core">
+    Core utilities for any TypeScript project - formatting, validation, timers, and more
+  </Card>
+  <Card title="@magicyan/discord" icon="discord" href="/packages/discord">
+    Comprehensive helpers for discord.js - channels, members, roles, embeds, and components
+  </Card>
+  <Card title="@magicyan/discord-events" icon="bolt" href="/packages/discord-events">
+    Extended event system with additional Discord events like member voice changes and timeouts
+  </Card>
+  <Card title="@magicyan/discord-ui" icon="grid" href="/packages/discord-ui">
+    Interactive UI components including pagination menus and confirmation prompts
+  </Card>
+  <Card title="@magicyan/canvas" icon="palette" href="/packages/canvas">
+    Canvas rendering utilities for creating dynamic images and graphics
+  </Card>
+  <Card title="@magicyan/minecraft" icon="cube" href="/packages/minecraft">
+    Minecraft API integrations for Mojang, server status, and player skins
+  </Card>
+</CardGroup>
+
+## Package Dependencies
+
+### Core Packages
+
+**@magicyan/core** - No dependencies
+- Standalone utility library
+- Can be used in any TypeScript project
+- Required by @magicyan/discord
+
+### Discord Packages
+
+**@magicyan/discord**
+- Depends on: `@magicyan/core`
+- Peer dependency: `discord.js ^14.25.1`
+- Most commonly used package for Discord bots
+
+**@magicyan/discord-events**
+- Peer dependency: `discord.js ^14.19.2`
+- Extends the Discord.js event system
+- Works alongside @magicyan/discord
+
+**@magicyan/discord-ui**
+- No dependencies on other Magicyan packages
+- Works with any Discord.js bot
+- Provides interactive menu and prompt components
+
+### Specialized Packages
+
+**@magicyan/canvas**
+- Peer dependency: `@napi-rs/canvas ^0.1.78`
+- For creating images and graphics
+- Useful for welcome cards, stats images, etc.
+
+**@magicyan/minecraft**
+- Depends on: `lodash ^4.17.21`
+- For Minecraft-related Discord bots
+- Provides typed API wrappers for Minecraft data
+
+## Choosing Packages
+
+### For a Basic Discord Bot
+
+<CodeGroup>
+```bash npm
+npm install discord.js @magicyan/discord
+```
+
+```bash yarn
+yarn add discord.js @magicyan/discord
+```
+
+```bash pnpm
+pnpm add discord.js @magicyan/discord
+```
+</CodeGroup>
+
+This gives you discord.js helpers and core utilities (automatically included).
+
+### For Advanced Event Handling
+
+<CodeGroup>
+```bash npm
+npm install discord.js @magicyan/discord @magicyan/discord-events
+```
+
+```bash yarn
+yarn add discord.js @magicyan/discord @magicyan/discord-events
+```
+
+```bash pnpm
+pnpm add discord.js @magicyan/discord @magicyan/discord-events
+```
+</CodeGroup>
+
+Adds extended events like member connect/disconnect, timeouts, and more.
+
+### For Interactive Menus
+
+<CodeGroup>
+```bash npm
+npm install discord.js @magicyan/discord @magicyan/discord-ui
+```
+
+```bash yarn
+yarn add discord.js @magicyan/discord @magicyan/discord-ui
+```
+
+```bash pnpm
+pnpm add discord.js @magicyan/discord @magicyan/discord-ui
+```
+</CodeGroup>
+
+Adds pagination menus and confirmation prompts.
+
+### For Image Generation
+
+<CodeGroup>
+```bash npm
+npm install discord.js @magicyan/discord @magicyan/canvas @napi-rs/canvas
+```
+
+```bash yarn  
+yarn add discord.js @magicyan/discord @magicyan/canvas @napi-rs/canvas
+```
+
+```bash pnpm
+pnpm add discord.js @magicyan/discord @magicyan/canvas @napi-rs/canvas
+```
+</CodeGroup>
+
+Adds canvas rendering for welcome cards, stats images, and more.
+
+### For Minecraft Bots
+
+<CodeGroup>
+```bash npm
+npm install discord.js @magicyan/discord @magicyan/minecraft
+```
+
+```bash yarn
+yarn add discord.js @magicyan/discord @magicyan/minecraft
+```
+
+```bash pnpm
+pnpm add discord.js @magicyan/discord @magicyan/minecraft
+```
+</CodeGroup>
+
+Adds Minecraft API integrations for server status, player skins, and more.
+
+## Installation Matrix
+
+| Package | Dependencies | Peer Dependencies | Use Case |
+|---------|-------------|-------------------|----------|
+| @magicyan/core | None | None | Utility functions |
+| @magicyan/discord | @magicyan/core | discord.js ^14.25.1 | Discord bot helpers |
+| @magicyan/discord-events | None | discord.js ^14.19.2 | Extended events |
+| @magicyan/discord-ui | None | None | Interactive menus |
+| @magicyan/canvas | None | @napi-rs/canvas ^0.1.78 | Image generation |
+| @magicyan/minecraft | lodash | None | Minecraft APIs |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Get Started" icon="rocket" href="/quickstart">
+    Follow the quickstart guide to build your first bot
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/core/format">
+    Explore the complete API documentation
+  </Card>
+</CardGroup>

@@ -1,0 +1,581 @@
+---
+title: Canvas Rendering
+description: Guide to creating custom images with @magicyan/canvas
+icon: image
+---
+
+The `@magicyan/canvas` package is a wrapper around [@napi-rs/canvas](https://www.npmjs.com/package/@napi-rs/canvas) that provides enhanced features for creating images in your Discord bot. Use it to generate welcome cards, user statistics, leaderboards, and more.
+
+## Installation
+
+Install the package:
+
+```bash
+npm install @magicyan/canvas
+```
+
+<Note>
+  This package works the same as the original `@napi-rs/canvas` library, but with additional convenience features.
+</Note>
+
+## Basic Usage
+
+### Creating a Canvas
+
+```typescript
+import { Canvas } from "@magicyan/canvas";
+
+const canvas = new Canvas(800, 400); // width, height
+const ctx = canvas.getContext();
+
+// Draw something
+ctx.fillStyle = "#5865F2";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Save to file
+await canvas.writeFile("./output.png", "png");
+```
+
+### Converting to Buffer
+
+For sending images in Discord:
+
+```typescript
+import { AttachmentBuilder } from "discord.js";
+
+const canvas = new Canvas(800, 400);
+const ctx = canvas.getContext();
+
+// Draw your image
+ctx.fillStyle = "#5865F2";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Convert to buffer and send
+const buffer = await canvas.encode("png");
+const attachment = new AttachmentBuilder(buffer, { 
+  name: "image.png" 
+});
+
+await interaction.reply({ files: [attachment] });
+```
+
+## Enhanced Context Features
+
+The Magicyan canvas extends the context with convenient property setters.
+
+### Style Management
+
+Easily set fill and stroke styles:
+
+```typescript
+const ctx = canvas.getContext();
+
+// Set styles
+ctx.style.set("fill", "#5865F2");
+ctx.style.set("stroke", "#ffffff");
+
+// Or use dedicated methods
+ctx.style.setFill("#dc3d3d");
+ctx.style.setStroke("blueviolet");
+
+// Access current values
+console.log(ctx.style.fill);   // #dc3d3d
+console.log(ctx.style.stroke); // blueviolet
+```
+
+### Font Configuration
+
+Manage fonts with a clean API:
+
+```typescript
+const ctx = canvas.getContext();
+
+// Set all font properties at once
+ctx.font.set({
+  size: 40,
+  family: "Arial",
+  style: "italic",
+  weight: "bold",
+  baseline: "top",
+  align: "center",
+});
+
+// Or set individual properties
+ctx.font.setSize(60);
+ctx.font.setFamily("Helvetica");
+ctx.font.setWeight("normal");
+ctx.font.setAlign("left");
+
+// Access current values
+console.log(ctx.font.size);     // 60
+console.log(ctx.font.family);   // Helvetica
+console.log(ctx.font.weight);   // normal
+console.log(ctx.font.align);    // left
+```
+
+### Line Configuration
+
+```typescript
+const ctx = canvas.getContext();
+
+// Set line properties
+ctx.line.set({
+  width: 5,
+  cap: "round",
+  join: "bevel",
+  dash: [10, 5],
+  dashOffset: 2,
+});
+
+// Individual setters
+ctx.line.setWidth(10);
+ctx.line.setCap("square");
+ctx.line.setJoin("round");
+ctx.line.setDash(5, 10, 5); // Variable arguments
+ctx.line.setDashOffset(4);
+
+// Access values
+console.log(ctx.line.width);      // 10
+console.log(ctx.line.dash);       // [5, 10, 5]
+console.log(ctx.line.dashOffset); // 4
+```
+
+### Filter Effects
+
+Apply visual filters to your canvas:
+
+```typescript
+import { blurFilter, filter, opacityFilter } from "@magicyan/canvas";
+
+const ctx = canvas.getContext();
+
+// Set multiple filters
+ctx.filter.set(
+  blurFilter(10),
+  filter.sepia(40),
+  opacityFilter(80)
+);
+
+// Add more filters
+ctx.filter.add(filter.brightness(120));
+
+// Remove a specific filter
+ctx.filter.remove("blur");
+
+// Clear all filters
+ctx.filter.clear();
+
+// Check current filters
+console.log(ctx.filter.current);
+// ["sepia(40%)", "opacity(80%)", "brightness(120%)"]
+```
+
+Available filters:
+
+```typescript
+import { filter } from "@magicyan/canvas";
+
+filter.blur(10);           // blur(10px)
+filter.brightness(120);    // brightness(120%)
+filter.contrast(150);      // contrast(150%)
+filter.grayscale(100);     // grayscale(100%)
+filter.hueRotate(90);      // hue-rotate(90deg)
+filter.invert(100);        // invert(100%)
+filter.opacity(75);        // opacity(75%)
+filter.saturate(200);      // saturate(200%)
+filter.sepia(50);          // sepia(50%)
+```
+
+## Gradient Support
+
+Create beautiful gradients easily:
+
+### Linear Gradients
+
+```typescript
+const ctx = canvas.getContext();
+
+const gradient = ctx.createGradient({
+  type: "linear",
+  x0: 0, 
+  y0: 0,
+  x1: canvas.width, 
+  y1: canvas.height,
+  colorStop: {
+    0: "#5865F2",
+    0.5: "#57F287",
+    1: "#FEE75C",
+  }
+});
+
+ctx.style.set("fill", gradient);
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+```
+
+### Radial Gradients
+
+```typescript
+const gradient = ctx.createGradient({
+  type: "radial",
+  x0: canvas.width / 2,  // Center X
+  y0: canvas.height / 2, // Center Y
+  r0: 0,                 // Inner radius
+  x1: canvas.width / 2,  // Outer X
+  y1: canvas.height / 2, // Outer Y
+  r1: 200,               // Outer radius
+  colorStop: {
+    0: "#ffffff",
+    1: "#000000",
+  }
+});
+
+ctx.style.set("fill", gradient);
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+```
+
+## Avatar Utilities
+
+Create circular or rounded avatars:
+
+```typescript
+import { Canvas, createAvatar } from "@magicyan/canvas";
+import { loadImage } from "@napi-rs/canvas";
+
+// Load user avatar
+const avatarURL = interaction.user.displayAvatarURL({ 
+  extension: "png",
+  size: 256 
+});
+const image = await loadImage(avatarURL);
+
+// Create circular avatar (default)
+const avatar = createAvatar(image);
+
+// Custom radius
+const roundedAvatar = createAvatar(image, 32);
+
+// Different corners [topLeft/bottomRight]
+const customAvatar = createAvatar(image, [32, 0]);
+
+// All corners [topLeft, topRight, bottomRight, bottomLeft]
+const fullCustom = createAvatar(image, [32, 32, 0, 0]);
+
+// Use in main canvas
+const canvas = new Canvas(800, 400);
+const ctx = canvas.getContext();
+ctx.drawImage(avatar, 50, 50);
+```
+
+## Rounded Rectangles
+
+Draw rectangles with rounded corners:
+
+```typescript
+const ctx = canvas.getContext();
+
+ctx.fillStyle = "#5865F2";
+
+// All corners with same radius
+ctx.fillRect(50, 50, 200, 100, 16);
+
+// Different horizontal and vertical radii
+ctx.fillRect(300, 50, 200, 100, [16, 8]);
+
+// Each corner individually [topLeft, topRight, bottomRight, bottomLeft]
+ctx.fillRect(50, 200, 200, 100, [32, 32, 0, 0]);
+```
+
+## Complete Example: Welcome Card
+
+Here's a complete example of creating a welcome card:
+
+```typescript
+import { Canvas, createAvatar } from "@magicyan/canvas";
+import { loadImage } from "@napi-rs/canvas";
+import { AttachmentBuilder, GuildMember } from "discord.js";
+
+export async function createWelcomeCard(member: GuildMember) {
+  const canvas = new Canvas(800, 300);
+  const ctx = canvas.getContext();
+
+  // Background gradient
+  const bgGradient = ctx.createGradient({
+    type: "linear",
+    x0: 0,
+    y0: 0,
+    x1: canvas.width,
+    y1: canvas.height,
+    colorStop: {
+      0: "#667eea",
+      1: "#764ba2",
+    }
+  });
+
+  ctx.style.set("fill", bgGradient);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Add semi-transparent overlay
+  ctx.style.setFill("rgba(0, 0, 0, 0.3)");
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw avatar
+  const avatarURL = member.user.displayAvatarURL({ 
+    extension: "png",
+    size: 256 
+  });
+  const avatarImage = await loadImage(avatarURL);
+  const avatar = createAvatar(avatarImage); // Circular
+  
+  const avatarSize = 150;
+  const avatarX = 50;
+  const avatarY = (canvas.height - avatarSize) / 2;
+  
+  // Avatar border
+  ctx.style.setFill("#ffffff");
+  ctx.beginPath();
+  ctx.arc(
+    avatarX + avatarSize / 2,
+    avatarY + avatarSize / 2,
+    avatarSize / 2 + 5,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+  
+  // Draw avatar
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(
+    avatarX + avatarSize / 2,
+    avatarY + avatarSize / 2,
+    avatarSize / 2,
+    0,
+    Math.PI * 2
+  );
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+  ctx.restore();
+
+  // Welcome text
+  ctx.style.setFill("#ffffff");
+  ctx.font.set({
+    size: 40,
+    family: "Arial",
+    weight: "bold",
+    baseline: "middle",
+  });
+  
+  const textX = avatarX + avatarSize + 40;
+  ctx.fillText("Welcome!", textX, 90);
+
+  // Username
+  ctx.font.setSize(32);
+  ctx.font.setWeight("normal");
+  ctx.fillText(member.user.username, textX, 140);
+
+  // Member count
+  ctx.font.setSize(24);
+  ctx.style.setFill("rgba(255, 255, 255, 0.8)");
+  ctx.fillText(
+    `Member #${member.guild.memberCount}`,
+    textX,
+    190
+  );
+
+  // Convert to attachment
+  const buffer = await canvas.encode("png");
+  return new AttachmentBuilder(buffer, { 
+    name: "welcome.png" 
+  });
+}
+
+// Usage in your bot
+client.on("guildMemberAdd", async (member) => {
+  const welcomeChannel = findChannel(member.guild).byName("welcome");
+  if (!welcomeChannel?.isTextBased()) return;
+
+  const card = await createWelcomeCard(member);
+  
+  await welcomeChannel.send({
+    content: `Welcome to the server, ${member}!`,
+    files: [card]
+  });
+});
+```
+
+## Example: User Stats Card
+
+```typescript
+import { Canvas } from "@magicyan/canvas";
+import { AttachmentBuilder, GuildMember } from "discord.js";
+
+export async function createStatsCard(member: GuildMember) {
+  const canvas = new Canvas(600, 400);
+  const ctx = canvas.getContext();
+
+  // Background
+  ctx.style.set("fill", "#2C2F33");
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Card background
+  ctx.style.set("fill", "#23272A");
+  ctx.fillRect(20, 20, 560, 360, 16);
+
+  // Title bar
+  const titleGradient = ctx.createGradient({
+    type: "linear",
+    x0: 20,
+    y0: 20,
+    x1: 580,
+    y1: 20,
+    colorStop: {
+      0: "#5865F2",
+      1: "#57F287",
+    }
+  });
+  ctx.style.set("fill", titleGradient);
+  ctx.fillRect(20, 20, 560, 80, [16, 16, 0, 0]);
+
+  // Title text
+  ctx.style.set("fill", "#ffffff");
+  ctx.font.set({
+    size: 36,
+    family: "Arial",
+    weight: "bold",
+    baseline: "middle",
+    align: "center",
+  });
+  ctx.fillText(member.user.username, 300, 60);
+
+  // Stats
+  const stats = [
+    { label: "Join Date", value: `<t:${Math.floor(member.joinedTimestamp! / 1000)}:R>` },
+    { label: "Roles", value: `${member.roles.cache.size}` },
+    { label: "Account Created", value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:R>` },
+  ];
+
+  ctx.font.setSize(24);
+  ctx.font.setAlign("left");
+  let yPos = 150;
+
+  for (const stat of stats) {
+    // Label
+    ctx.style.set("fill", "rgba(255, 255, 255, 0.6)");
+    ctx.fillText(stat.label, 50, yPos);
+
+    // Value
+    ctx.style.set("fill", "#ffffff");
+    ctx.font.setWeight("bold");
+    ctx.fillText(stat.value, 50, yPos + 35);
+    ctx.font.setWeight("normal");
+
+    yPos += 80;
+  }
+
+  const buffer = await canvas.encode("png");
+  return new AttachmentBuilder(buffer, { 
+    name: "stats.png" 
+  });
+}
+```
+
+## Loading Images
+
+Use `loadImage` from `@napi-rs/canvas` to load images:
+
+```typescript
+import { loadImage } from "@napi-rs/canvas";
+import { Canvas } from "@magicyan/canvas";
+
+// From URL
+const image = await loadImage("https://example.com/image.png");
+
+// From file
+const localImage = await loadImage("./assets/background.png");
+
+// From buffer
+const response = await fetch("https://example.com/image.png");
+const buffer = await response.arrayBuffer();
+const bufferImage = await loadImage(Buffer.from(buffer));
+
+// Use in canvas
+const canvas = new Canvas(800, 400);
+const ctx = canvas.getContext();
+ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Optimize image sizes">
+    Keep canvas dimensions reasonable to avoid memory issues:
+
+    ```typescript
+    // ✅ Good - reasonable size
+    const canvas = new Canvas(800, 400);
+
+    // ❌ Avoid - unnecessarily large
+    const canvas = new Canvas(5000, 5000);
+    ```
+  </Accordion>
+
+  <Accordion title="Use PNG for transparency">
+    Choose the right format for your use case:
+
+    ```typescript
+    // For images with transparency
+    const buffer = await canvas.encode("png");
+
+    // For photos (smaller file size)
+    const buffer = await canvas.encode("jpeg");
+    ```
+  </Accordion>
+
+  <Accordion title="Cache loaded images">
+    Load frequently used images once and reuse them:
+
+    ```typescript
+    // Cache background image
+    let cachedBackground: Image | null = null;
+
+    async function getBackground() {
+      if (!cachedBackground) {
+        cachedBackground = await loadImage("./assets/bg.png");
+      }
+      return cachedBackground;
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Handle image loading errors">
+    Always handle potential loading errors:
+
+    ```typescript
+    try {
+      const avatar = await loadImage(user.displayAvatarURL());
+      ctx.drawImage(avatar, x, y, width, height);
+    } catch (error) {
+      // Use fallback image or default avatar
+      console.error("Failed to load avatar:", error);
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Discord Bot Setup" icon="robot" href="/guides/discord-bot-setup">
+    Learn how to set up your Discord bot project
+  </Card>
+  <Card title="UI Components" icon="palette" href="/guides/ui-components">
+    Create interactive menus and prompts
+  </Card>
+  <Card title="Custom Events" icon="bolt" href="/guides/custom-events">
+    Use extended Discord events for advanced functionality
+  </Card>
+  <Card title="Canvas API" icon="code" href="/api/canvas/canvas-builder">
+    View the complete Canvas API documentation
+  </Card>
+</CardGroup>

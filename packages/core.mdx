@@ -1,0 +1,236 @@
+---
+title: "@magicyan/core"
+description: "Lightweight utility functions for common tasks in TypeScript projects"
+---
+
+## Overview
+
+`@magicyan/core` is a collection of simple, lightweight utility functions for common tasks in any TypeScript project. It provides formatting, validation, timers, date manipulation, and mathematical operations without any dependencies.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/core
+```
+
+```bash yarn
+yarn add @magicyan/core
+```
+
+```bash pnpm
+pnpm add @magicyan/core
+```
+</CodeGroup>
+
+<Note>
+  This package has no dependencies and can be used in any TypeScript project, not just Discord bots.
+</Note>
+
+## Modules
+
+### Format
+
+Text formatting and string manipulation utilities.
+
+```typescript
+import { brBuilder, spaceBuilder, capitalize, limitText } from '@magicyan/core';
+
+// Join with line breaks
+const lines = brBuilder('Line 1', 'Line 2', 'Line 3');
+
+// Join with spaces
+const text = spaceBuilder('Hello', 'World');
+
+// Capitalize strings
+const capitalized = capitalize('hello world'); // "Hello world"
+
+// Limit text length
+const limited = limitText('Very long text here', 10); // "Very long..."
+```
+
+[View Format API →](/api/core/format)
+
+### Validation
+
+Validation utilities for common data types.
+
+```typescript
+import { isEmail, isUrl, isNumeric, isDefined } from '@magicyan/core';
+
+// Validate email addresses
+if (isEmail('user@example.com')) {
+  console.log('Valid email');
+}
+
+// Validate URLs
+if (isUrl('https://example.com')) {
+  console.log('Valid URL');
+}
+
+// Check if string is numeric
+if (isNumeric('123')) {
+  console.log('Is a number');
+}
+
+// Type guard for defined values
+if (isDefined(value)) {
+  // TypeScript knows value is not null/undefined
+  console.log(value.toString());
+}
+```
+
+[View Validation API →](/api/core/validation)
+
+### Timers
+
+Enhanced timer utilities with better control.
+
+```typescript
+import { createInterval, createTimeout, createLoopInterval } from '@magicyan/core';
+
+// Create stoppable intervals
+const interval = createInterval(() => {
+  console.log('Tick');
+}, 1000);
+
+// Stop the interval
+interval.stop();
+
+// Create timeouts
+const timeout = createTimeout(() => {
+  console.log('Delayed action');
+}, 5000);
+
+// Loop through an array with intervals
+const items = ['Item 1', 'Item 2', 'Item 3'];
+const loop = createLoopInterval(items, (item, index) => {
+  console.log(`Processing ${item}`);
+}, 1000);
+```
+
+[View Timers API →](/api/core/timers)
+
+### Date
+
+Date manipulation with a fluent API.
+
+```typescript
+import { createDate } from '@magicyan/core';
+
+// Create enhanced date
+const date = createDate();
+
+// Add time
+date.add({ days: 7, hours: 2 });
+
+// Subtract time
+date.sub({ months: 1 });
+
+// Set specific values
+date.set({ hours: 12, minutes: 0 });
+
+// Calculate differences
+const other = createDate();
+const diff = date.diff(other, 'days'); // Difference in days
+
+// Clone dates
+const cloned = date.clone();
+```
+
+[View Date API →](/api/core/date)
+
+### Math
+
+Mathematical utilities and random number generation.
+
+```typescript
+import { randomNumber, random, parseIntOrDefault } from '@magicyan/core';
+
+// Generate random integers
+const dice = randomNumber(1, 6);
+
+// Using the random object
+const int = random.int(0, 100);
+const float = random.float(0, 1);
+
+// Safe parsing with defaults
+const num = parseIntOrDefault('123', 0); // 123
+const invalid = parseIntOrDefault('abc', 0); // 0
+```
+
+[View Math API →](/api/core/math)
+
+### Convert
+
+Color conversion utilities.
+
+```typescript
+import { hexToRgb, rgbToHex } from '@magicyan/core';
+
+// Convert hex to RGB
+const rgb = hexToRgb('#FF5733');
+console.log(rgb); // { r: 255, g: 87, b: 51 }
+
+// Convert RGB to hex
+const hex = rgbToHex({ r: 255, g: 87, b: 51 });
+console.log(hex); // "#FF5733"
+```
+
+[View Convert API →](/api/core/convert)
+
+### Additional Utilities
+
+**Check** - Type checking utilities
+```typescript
+import { isObject, isArray } from '@magicyan/core';
+```
+
+**With** - Conditional execution helpers
+```typescript
+import { withDefault, withFallback } from '@magicyan/core';
+```
+
+**Sleep** - Promise-based delays
+```typescript
+import { sleep } from '@magicyan/core';
+
+await sleep(1000); // Wait 1 second
+```
+
+**MS** - Time string parsing
+```typescript
+import { ms } from '@magicyan/core';
+
+const milliseconds = ms('1h'); // 3600000
+```
+
+## Type Exports
+
+```typescript
+import type { 
+  CanBeString,    // Union of string-like types
+  Nullable,       // T | null | undefined
+  FunctionLike    // Generic function type
+} from '@magicyan/core';
+```
+
+## Usage in Discord Bots
+
+While `@magicyan/core` works in any TypeScript project, it's automatically included when you install `@magicyan/discord`:
+
+```typescript
+import { brBuilder, capitalize } from '@magicyan/discord';
+// These come from @magicyan/core but are re-exported
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api/core/format">
+    Explore the complete Core API documentation
+  </Card>
+  <Card title="Discord Package" icon="discord" href="/packages/discord">
+    Learn about Discord-specific utilities
+  </Card>
+</CardGroup>

@@ -1,0 +1,493 @@
+---
+title: Custom Discord Events
+description: Guide to using extended Discord events with @magicyan/discord-events
+icon: bolt
+---
+
+The `@magicyan/discord-events` package extends Discord.js with additional specialized events for common bot use cases. These events make it easier to track member actions, moderation events, and more.
+
+## Installation
+
+First, install the package:
+
+```bash
+npm install @magicyan/discord-events
+```
+
+<Note>
+  This package requires `discord.js` version 14.25.1 or higher as a peer dependency.
+</Note>
+
+## Setup
+
+<Steps>
+  <Step title="Import the initializer">
+    Import the `initDiscordEvents` function in your main bot file:
+
+    ```typescript src/index.ts
+    import { Client, GatewayIntentBits } from "discord.js";
+    import { initDiscordEvents } from "@magicyan/discord-events";
+
+    const client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages,
+      ],
+    });
+    ```
+  </Step>
+
+  <Step title="Initialize custom events">
+    Call `initDiscordEvents` with your client to register all custom events:
+
+    ```typescript src/index.ts
+    initDiscordEvents(client);
+
+    client.login(process.env.DISCORD_TOKEN);
+    ```
+
+    <Info>
+      This function sets up listeners for Discord's native events and emits custom events when specific conditions are met.
+    </Info>
+  </Step>
+
+  <Step title="Listen to custom events">
+    Use the custom events just like regular Discord.js events:
+
+    ```typescript
+    client.on("guildMemberConnect", (member, channel) => {
+      console.log(`${member.displayName} joined ${channel.name}`);
+    });
+    ```
+  </Step>
+</Steps>
+
+## Required Intents
+
+Different custom events require specific Discord gateway intents:
+
+| Event Category | Required Intents |
+| -------------- | ---------------- |
+| Voice Events | `GuildVoiceStates` |
+| Moderation Events | `GuildModeration`, `Guilds` |
+| Member Events | `GuildMembers` |
+| Message Events | `GuildMessages` |
+| Role/Channel Events | `Guilds` |
+
+<Warning>
+  Make sure to enable the required privileged intents in your [Discord Developer Portal](https://discord.com/developers/applications) if you're using events that depend on them.
+</Warning>
+
+## Voice Channel Events
+
+### guildMemberConnect
+
+Emitted when a member connects to a voice channel.
+
+```typescript
+client.on("guildMemberConnect", (member, channel, oldChannel) => {
+  console.log(`${member.displayName} connected to ${channel.name}`);
+  
+  if (oldChannel) {
+    console.log(`They moved from ${oldChannel.name}`);
+  } else {
+    console.log("They just joined voice");
+  }
+});
+```
+
+**Parameters:**
+- `member` - The GuildMember who connected
+- `channel` - The VoiceBasedChannel they connected to
+- `oldChannel` - The previous channel (null if they weren't in voice before)
+
+**Use Cases:**
+- Log voice channel activity
+- Send welcome messages when users join voice
+- Assign voice-based roles
+- Track voice channel statistics
+
+### guildMemberDisconnect
+
+Emitted when a member disconnects from a voice channel.
+
+```typescript
+client.on("guildMemberDisconnect", (member, channel) => {
+  console.log(`${member.displayName} left ${channel.name}`);
+  
+  // Log voice session duration
+  const sessionTime = Date.now() - member.voice.sessionId;
+  console.log(`Session duration: ${sessionTime}ms`);
+});
+```
+
+**Parameters:**
+- `member` - The GuildMember who disconnected
+- `channel` - The VoiceBasedChannel they left
+
+**Use Cases:**
+- Track voice activity time
+- Clean up temporary voice channels
+- Remove voice-based roles
+- Log voice session analytics
+
+### guildMemberMoved
+
+Emitted when a member is moved from one voice channel to another by a moderator.
+
+```typescript
+client.on("guildMemberMoved", (member, executor, oldChannel, newChannel) => {
+  console.log(
+    `${executor.displayName} moved ${member.displayName} ` +
+    `from ${oldChannel.name} to ${newChannel.name}`
+  );
+  
+  // Notify the moved member
+  member.send(
+    `You were moved to ${newChannel.name} by ${executor.displayName}`
+  ).catch(() => {});
+});
+```
+
+**Parameters:**
+- `member` - The GuildMember who was moved
+- `executor` - The GuildMember who performed the move
+- `oldChannel` - The VoiceBasedChannel they were moved from
+- `newChannel` - The VoiceBasedChannel they were moved to
+
+## Timeout Events
+
+### guildMemberTimeoutAdd
+
+Emitted when a member receives a timeout.
+
+```typescript
+client.on("guildMemberTimeoutAdd", (member, executor, expiresAt, reason) => {
+  const duration = expiresAt.getTime() - Date.now();
+  const minutes = Math.floor(duration / 60000);
+  
+  console.log(
+    `${member.displayName} was timed out by ${executor.displayName} ` +
+    `for ${minutes} minutes. Reason: ${reason ?? "No reason provided"}`
+  );
+  
+  // Log to moderation channel
+  const logChannel = findChannel(member.guild).byName("mod-logs");
+  if (logChannel?.isTextBased()) {
+    logChannel.send({
+      embeds: [createEmbed({
+        title: "Member Timed Out",
+        description: `${member} was timed out`,
+        fields: [
+          { name: "Moderator", value: `${executor}`, inline: true },
+          { name: "Duration", value: `${minutes} minutes`, inline: true },
+          { name: "Reason", value: reason ?? "None" },
+          { name: "Expires", value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>` },
+        ],
+        color: "Orange",
+      })]
+    });
+  }
+});
+```
+
+**Parameters:**
+- `member` - The GuildMember who was timed out
+- `executor` - The GuildMember who issued the timeout
+- `expiresAt` - Date when the timeout expires
+- `reason` - Reason for the timeout (can be null)
+
+### guildMemberTimeoutRemove
+
+Emitted when a timeout is removed from a member.
+
+```typescript
+client.on("guildMemberTimeoutRemove", (member, executor) => {
+  console.log(
+    `Timeout removed from ${member.displayName} by ${executor.displayName}`
+  );
+});
+```
+
+**Parameters:**
+- `member` - The GuildMember whose timeout was removed
+- `executor` - The GuildMember who removed the timeout
+
+## Moderation Events
+
+### userBanAdd
+
+Emitted when a user is banned from the guild.
+
+```typescript
+import { createEmbed, findChannel } from "@magicyan/discord";
+
+client.on("userBanAdd", (user, executor, reason, guild) => {
+  console.log(`${user.tag} was banned by ${executor.displayName}`);
+  
+  // Log to mod channel
+  const modLogs = findChannel(guild).byName("mod-logs");
+  if (modLogs?.isTextBased()) {
+    modLogs.send({
+      embeds: [createEmbed({
+        title: "User Banned",
+        thumbnail: user.displayAvatarURL(),
+        fields: [
+          { name: "User", value: `${user.tag} (${user.id})` },
+          { name: "Moderator", value: `${executor}`, inline: true },
+          { name: "Reason", value: reason ?? "No reason provided" },
+        ],
+        color: "Red",
+        timestamp: new Date(),
+      })]
+    });
+  }
+});
+```
+
+**Parameters:**
+- `user` - The User who was banned
+- `executor` - The GuildMember who issued the ban
+- `reason` - Reason for the ban (can be null)
+- `guild` - The Guild where the ban occurred
+
+### userBanRemove
+
+Emitted when a user's ban is removed.
+
+```typescript
+client.on("userBanRemove", (user, executor, reason, guild) => {
+  console.log(
+    `Ban removed for ${user.tag} by ${executor.displayName}`
+  );
+});
+```
+
+**Parameters:**
+- `user` - The User who was unbanned
+- `executor` - The GuildMember who removed the ban
+- `reason` - Reason for the unban (can be null)
+- `guild` - The Guild where the unban occurred
+
+### userKick
+
+Emitted when a user is kicked from the guild.
+
+```typescript
+client.on("userKick", (user, executor, reason, guild) => {
+  console.log(
+    `${user.tag} was kicked by ${executor.displayName}. ` +
+    `Reason: ${reason ?? "None"}`
+  );
+});
+```
+
+**Parameters:**
+- `user` - The User who was kicked
+- `executor` - The GuildMember who kicked them
+- `reason` - Reason for the kick (can be null)
+- `guild` - The Guild where the kick occurred
+
+## Role Events
+
+### extendedRoleCreate
+
+Emitted when a role is created, with executor information.
+
+```typescript
+client.on("extendedRoleCreate", (role, executor) => {
+  console.log(
+    `Role ${role.name} was created by ${executor.displayName}`
+  );
+});
+```
+
+**Parameters:**
+- `role` - The Role that was created
+- `executor` - The GuildMember who created the role
+
+### extendedRoleUpdate
+
+Emitted when a role is updated, with change information.
+
+```typescript
+client.on("extendedRoleUpdate", (role, changes, executor) => {
+  console.log(
+    `Role ${role.name} was updated by ${executor.displayName}`
+  );
+  console.log("Changes:", changes);
+});
+```
+
+**Parameters:**
+- `role` - The updated Role
+- `changes` - Object containing the changes made
+- `executor` - The GuildMember who updated the role
+
+### extendedRoleDelete
+
+Emitted when a role is deleted.
+
+```typescript
+client.on("extendedRoleDelete", (deletedRole, executor) => {
+  console.log(
+    `Role ${deletedRole.name} was deleted by ${executor.displayName}`
+  );
+});
+```
+
+**Parameters:**
+- `deletedRole` - The deleted Role object
+- `executor` - The GuildMember who deleted the role
+
+## Channel Events
+
+### extendedChannelDelete
+
+Emitted when a channel is deleted.
+
+```typescript
+client.on("extendedChannelDelete", (channel, executor) => {
+  console.log(
+    `Channel #${channel.name} was deleted by ${executor.displayName}`
+  );
+});
+```
+
+**Parameters:**
+- `channel` - The deleted Channel
+- `executor` - The GuildMember who deleted the channel
+
+## Webhook Events
+
+### webhookMessageCreate
+
+Emitted when a webhook sends a message.
+
+```typescript
+client.on("webhookMessageCreate", (message, webhook) => {
+  console.log(
+    `Webhook message from ${webhook.name}: ${message.content}`
+  );
+});
+```
+
+**Parameters:**
+- `message` - The Message sent by the webhook
+- `webhook` - The Webhook that sent the message
+
+## Complete Example
+
+Here's a complete example of a moderation logger using custom events:
+
+```typescript src/events/moderation.ts
+import { Client } from "discord.js";
+import { initDiscordEvents } from "@magicyan/discord-events";
+import { createEmbed, findChannel } from "@magicyan/discord";
+
+export function setupModerationLogger(client: Client) {
+  initDiscordEvents(client);
+
+  // Log all timeouts
+  client.on("guildMemberTimeoutAdd", (member, executor, expiresAt, reason) => {
+    const logChannel = findChannel(member.guild).byName("mod-logs");
+    if (!logChannel?.isTextBased()) return;
+
+    const duration = Math.floor((expiresAt.getTime() - Date.now()) / 60000);
+    
+    logChannel.send({
+      embeds: [createEmbed({
+        title: "⏱️ Member Timed Out",
+        fields: [
+          { name: "Member", value: `${member}`, inline: true },
+          { name: "Moderator", value: `${executor}`, inline: true },
+          { name: "Duration", value: `${duration} minutes` },
+          { name: "Reason", value: reason ?? "No reason provided" },
+        ],
+        color: "Orange",
+        timestamp: new Date(),
+      })]
+    });
+  });
+
+  // Log bans
+  client.on("userBanAdd", (user, executor, reason, guild) => {
+    const logChannel = findChannel(guild).byName("mod-logs");
+    if (!logChannel?.isTextBased()) return;
+
+    logChannel.send({
+      embeds: [createEmbed({
+        title: "🔨 User Banned",
+        thumbnail: user.displayAvatarURL(),
+        fields: [
+          { name: "User", value: `${user.tag}\n${user.id}` },
+          { name: "Moderator", value: `${executor}`, inline: true },
+          { name: "Reason", value: reason ?? "No reason provided" },
+        ],
+        color: "Red",
+        timestamp: new Date(),
+      })]
+    });
+  });
+
+  // Log kicks
+  client.on("userKick", (user, executor, reason, guild) => {
+    const logChannel = findChannel(guild).byName("mod-logs");
+    if (!logChannel?.isTextBased()) return;
+
+    logChannel.send({
+      embeds: [createEmbed({
+        title: "👢 User Kicked",
+        fields: [
+          { name: "User", value: `${user.tag}`, inline: true },
+          { name: "Moderator", value: `${executor}`, inline: true },
+          { name: "Reason", value: reason ?? "No reason provided" },
+        ],
+        color: "Orange",
+        timestamp: new Date(),
+      })]
+    });
+  });
+
+  // Track voice activity
+  client.on("guildMemberConnect", (member, channel) => {
+    console.log(`🎤 ${member.displayName} joined ${channel.name}`);
+  });
+
+  client.on("guildMemberDisconnect", (member, channel) => {
+    console.log(`🔇 ${member.displayName} left ${channel.name}`);
+  });
+}
+```
+
+## Event Reference Table
+
+| Event | Parameters | Description |
+| ----- | ---------- | ----------- |
+| `webhookMessageCreate` | `message`, `webhook` | Webhook message is created |
+| `guildMemberConnect` | `member`, `voiceChannel`, `oldChannel` | Member connects to voice |
+| `guildMemberDisconnect` | `member`, `voiceChannel` | Member disconnects from voice |
+| `guildMemberMoved` | `member`, `executor`, `oldVoiceChannel`, `newVoiceChannel` | Member is moved between voice channels |
+| `guildMemberTimeoutAdd` | `member`, `executor`, `expireAt`, `reason` | Member receives a timeout |
+| `guildMemberTimeoutRemove` | `member`, `executor` | Member's timeout is removed |
+| `userKick` | `user`, `executor`, `reason`, `guild` | User is kicked |
+| `userBanAdd` | `user`, `executor`, `reason`, `guild` | User is banned |
+| `userBanRemove` | `user`, `executor`, `reason`, `guild` | User's ban is removed |
+| `extendedRoleCreate` | `role`, `executor` | Role is created |
+| `extendedRoleUpdate` | `role`, `changes`, `executor` | Role is updated |
+| `extendedRoleDelete` | `deletedRole`, `executor` | Role is deleted |
+| `extendedChannelDelete` | `channel`, `executor` | Channel is deleted |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Discord Bot Setup" icon="robot" href="/guides/discord-bot-setup">
+    Learn how to set up your Discord bot project
+  </Card>
+  <Card title="UI Components" icon="palette" href="/guides/ui-components">
+    Create interactive menus and prompts
+  </Card>
+</CardGroup>

@@ -1,0 +1,331 @@
+---
+title: "@magicyan/discord"
+description: "Simple functions to facilitate Discord bot development with discord.js"
+---
+
+## Overview
+
+`@magicyan/discord` provides a comprehensive set of helper functions to simplify Discord bot development with discord.js. It includes utilities for channels, members, roles, embeds, components, messages, and more.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install discord.js @magicyan/discord
+```
+
+```bash yarn
+yarn add discord.js @magicyan/discord
+```
+
+```bash pnpm
+pnpm add discord.js @magicyan/discord
+```
+</CodeGroup>
+
+<Note>
+  Requires **discord.js ^14.25.1** as a peer dependency. Also includes all utilities from `@magicyan/core`.
+</Note>
+
+## Key Features
+
+### Channel Utilities
+
+Find channels with flexible filtering options.
+
+```typescript
+import { findChannel } from '@magicyan/discord';
+
+// Find by ID
+const channel = findChannel(guild).byId('123456789');
+
+// Find by name
+const general = findChannel(guild).byName('general');
+
+// Find in category
+const ticket = findChannel(guild).inCategoryName('Support').byName('ticket-1');
+
+// Custom filter
+const voiceChannels = findChannel(guild).byFilter(ch => ch.isVoiceBased());
+```
+
+[View Channel API →](/api/discord/channels)
+
+### Member Utilities
+
+Find guild members with various criteria.
+
+```typescript
+import { findMember } from '@magicyan/discord';
+
+// Find by username
+const member = findMember(guild).byUsername('JohnDoe');
+
+// Find by display name
+const member2 = findMember(guild).byDisplayName('John');
+
+// Find by ID
+const member3 = findMember(guild).byId('123456789');
+
+// Custom filter
+const admins = findMember(guild).byFilter(m => m.permissions.has('Administrator'));
+```
+
+[View Member API →](/api/discord/members)
+
+### Role Utilities
+
+Find and manage roles easily.
+
+```typescript
+import { findRole } from '@magicyan/discord';
+
+// Find by name
+const role = findRole(guild).byName('Admin');
+
+// Find by color
+const redRole = findRole(guild).byHexColor('#FF0000');
+
+// Find by ID
+const role2 = findRole(guild).byId('123456789');
+```
+
+[View Role API →](/api/discord/roles)
+
+### Embed Builder
+
+Enhanced embed creation with extended functionality.
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+
+// Create a rich embed
+const embed = createEmbed({
+  title: 'Welcome!',
+  description: [
+    'Welcome to our server!',
+    'Please read the rules.',
+  ],
+  color: 'Blue',
+  timestamp: new Date(),
+  footer: { text: 'Server Bot', iconURL: guild.iconURL() },
+  thumbnail: member.displayAvatarURL(),
+  fields: [
+    { name: 'Members', value: guild.memberCount.toString(), inline: true },
+    { name: 'Channels', value: guild.channels.cache.size.toString(), inline: true },
+  ],
+});
+
+await channel.send({ embeds: [embed] });
+```
+
+[View Embed API →](/api/discord/embeds)
+
+### Component Utilities
+
+Create buttons, modals, and action rows easily.
+
+```typescript
+import { 
+  createRow, 
+  createLinkButton, 
+  createModal, 
+  createTextInput 
+} from '@magicyan/discord';
+
+// Create buttons
+const row = createRow(
+  new ButtonBuilder({
+    customId: 'accept',
+    label: 'Accept',
+    style: ButtonStyle.Success,
+  }),
+  createLinkButton({
+    label: 'Documentation',
+    url: 'https://docs.example.com',
+  })
+);
+
+// Create modals
+const modal = createModal({
+  customId: 'feedback',
+  title: 'Feedback Form',
+  components: [
+    createRow(
+      createTextInput({
+        customId: 'message',
+        label: 'Your Feedback',
+        style: TextInputStyle.Paragraph,
+        required: true,
+      })
+    ),
+  ],
+});
+
+await interaction.showModal(modal);
+```
+
+[View Component API →](/api/discord/components)
+
+### Message Utilities
+
+Find and parse messages with ease.
+
+```typescript
+import { findMessage, getMessageURLInfo, fetchMessageFromURL } from '@magicyan/discord';
+
+// Find messages
+const messages = await findMessage(channel).all({ limit: 10 });
+const message = await findMessage(channel).byId('123456789');
+
+// Parse message URLs
+const info = getMessageURLInfo('https://discord.com/channels/guild/channel/message');
+console.log(info); // { guildId, channelId, messageId }
+
+// Fetch from URL
+const message = await fetchMessageFromURL(client, 'https://discord.com/...');
+```
+
+[View Message API →](/api/discord/messages)
+
+## Constants
+
+The package provides useful constants:
+
+### CustomItents
+
+```typescript
+import { CustomItents } from '@magicyan/discord';
+
+const client = new Client({ 
+  intents: CustomItents.All // All common intents
+});
+```
+
+### EmbedColors
+
+```typescript
+import { EmbedColors } from '@magicyan/discord';
+
+const embed = new EmbedBuilder()
+  .setColor(EmbedColors.Blue);
+```
+
+### Characters
+
+Special Unicode characters for formatting:
+
+```typescript
+import { chars } from '@magicyan/discord';
+
+const text = `${chars.invisible} Hidden text`;
+```
+
+## Type Guards
+
+Type-safe guards for Discord objects:
+
+```typescript
+import { isAttachment, isButton, isModal, isMessage } from '@magicyan/discord';
+
+if (isButton(component)) {
+  // TypeScript knows this is a ButtonComponent
+  await component.reply('Button clicked!');
+}
+
+if (isMessage(interaction)) {
+  // TypeScript knows this is a Message
+  await interaction.reply('Message received!');
+}
+```
+
+## Complete Export List
+
+The package exports functions from these modules:
+
+- **channels** - Channel finding utilities
+- **members** - Member finding utilities
+- **roles** - Role finding utilities
+- **embeds** - Enhanced embed builders
+- **components** - Button, modal, and row creators
+- **messages** - Message finding and parsing
+- **commands** - Command utilities
+- **emojis** - Emoji parsing and utilities
+- **webhooks** - Webhook helpers
+- **regex** - Discord-specific regex patterns
+- **misc** - Miscellaneous utilities
+
+Plus all exports from `@magicyan/core`!
+
+## Usage Example
+
+Here's a complete example using multiple utilities:
+
+```typescript
+import { 
+  Client, 
+  GatewayIntentBits,
+  Events,
+  ButtonStyle,
+  ButtonBuilder,
+} from 'discord.js';
+import { 
+  CustomItents,
+  findChannel,
+  createEmbed,
+  createRow,
+  brBuilder,
+} from '@magicyan/discord';
+
+const client = new Client({ intents: CustomItents.All });
+
+client.on(Events.ClientReady, async (readyClient) => {
+  console.log(`Logged in as ${readyClient.user.tag}`);
+});
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  const channel = findChannel(member.guild).byName('welcome');
+  if (!channel?.isTextBased()) return;
+
+  const embed = createEmbed({
+    title: 'Welcome!',
+    description: brBuilder(
+      `Welcome ${member.user}, to **${member.guild.name}**!`,
+      '',
+      'Please read the rules and have fun!'
+    ),
+    color: 'Green',
+    thumbnail: member.displayAvatarURL(),
+    timestamp: new Date(),
+  });
+
+  const row = createRow(
+    new ButtonBuilder({
+      customId: 'read-rules',
+      label: 'Read Rules',
+      style: ButtonStyle.Primary,
+    })
+  );
+
+  await channel.send({ embeds: [embed], components: [row] });
+});
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api/discord/channels">
+    Explore the complete Discord API documentation
+  </Card>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Build your first bot with Magicyan
+  </Card>
+  <Card title="Discord Events" icon="bolt" href="/packages/discord-events">
+    Add extended event handling to your bot
+  </Card>
+  <Card title="Discord UI" icon="grid" href="/packages/discord-ui">
+    Create interactive menus and prompts
+  </Card>
+</CardGroup>

@@ -1,0 +1,323 @@
+---
+title: Canvas Builder
+description: Advanced canvas context and font management utilities
+---
+
+The Canvas Builder provides a powerful font management system for working with HTML5 Canvas contexts.
+
+## CanvasContextFont
+
+A class for managing canvas text rendering properties with chainable methods.
+
+### Constructor
+
+```typescript
+new CanvasContextFont(
+  context: SKRSContext2D,
+  props?: Partial<CanvasContextFontProps>
+)
+```
+
+Creates a new font manager for a canvas context.
+
+<ParamField path="context" type="SKRSContext2D" required>
+  The canvas 2D rendering context from `@napi-rs/canvas`
+</ParamField>
+
+<ParamField path="props" type="Partial<CanvasContextFontProps>">
+  Initial font properties
+  
+  <Expandable title="properties">
+    <ParamField path="family" type="string">
+      Font family name (default: `"Arial"`)
+    </ParamField>
+    <ParamField path="style" type="ContextFontStyle | string">
+      Font style: `"italic"`, `"underline"`, `"strikethrough"`, or combinations
+    </ParamField>
+    <ParamField path="weight" type="ContextFontWeight | string">
+      Font weight: `"thin"`, `"light"`, `"regular"`, `"medium"`, `"semibold"`, `"bold"`, `"extrabold"`, `"black"`, or numeric values `"100"`-`"900"`
+    </ParamField>
+    <ParamField path="size" type="number">
+      Font size in pixels (default: `12`)
+    </ParamField>
+    <ParamField path="align" type="CanvasTextAlign">
+      Text alignment: `"start"`, `"end"`, `"left"`, `"right"`, `"center"` (default: `"start"`)
+    </ParamField>
+    <ParamField path="baseline" type="CanvasTextBaseline">
+      Text baseline: `"top"`, `"hanging"`, `"middle"`, `"alphabetic"`, `"ideographic"`, `"bottom"` (default: `"top"`)
+    </ParamField>
+    <ParamField path="kerning" type="CanvasFontKerning">
+      Font kerning: `"auto"`, `"normal"`, `"none"` (default: `"auto"`)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Methods
+
+#### set
+
+```typescript
+set(props: CanvasContextFontProps): CanvasContextFont
+```
+
+Sets multiple font properties at once and returns the instance for chaining.
+
+<ParamField path="props" type="CanvasContextFontProps" required>
+  Font properties to update
+</ParamField>
+
+<ResponseField name="return" type="CanvasContextFont">
+  Returns the instance for method chaining
+</ResponseField>
+
+#### setFamily
+
+```typescript
+setFamily(family: string): CanvasContextFont
+```
+
+Sets the font family.
+
+#### setStyle
+
+```typescript
+setStyle(style: ContextFontStyle | string): CanvasContextFont
+```
+
+Sets the font style.
+
+#### setWeight
+
+```typescript
+setWeight(weight: ContextFontWeight | string): CanvasContextFont
+```
+
+Sets the font weight.
+
+#### setSize
+
+```typescript
+setSize(size: number): CanvasContextFont
+```
+
+Sets the font size in pixels.
+
+#### setAlign
+
+```typescript
+setAlign(align: CanvasTextAlign): CanvasContextFont
+```
+
+Sets the text alignment.
+
+#### setBaseline
+
+```typescript
+setBaseline(baseline: CanvasTextBaseline): CanvasContextFont
+```
+
+Sets the text baseline.
+
+#### setKerning
+
+```typescript
+setKerning(kerning: CanvasFontKerning): CanvasContextFont
+```
+
+Sets the font kerning.
+
+### Properties (Getters)
+
+All properties are read-only and accessed via getters:
+
+- `family` - Current font family
+- `style` - Current font style
+- `weight` - Current font weight
+- `size` - Current font size
+- `align` - Current text alignment
+- `baseline` - Current text baseline
+- `kerning` - Current font kerning
+
+### Example
+
+<CodeGroup>
+```typescript Basic Usage
+import { CanvasContextFont } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 24,
+  weight: "bold",
+  align: "center",
+});
+
+ctx.fillText("Hello World", 400, 300);
+```
+
+```typescript Method Chaining
+import { CanvasContextFont } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const font = new CanvasContextFont(ctx)
+  .setFamily("Helvetica")
+  .setSize(32)
+  .setWeight("bold")
+  .setAlign("center")
+  .setBaseline("middle");
+
+ctx.fillStyle = "#ffffff";
+ctx.fillText("Centered Text", 400, 300);
+```
+
+```typescript Dynamic Font Changes
+import { CanvasContextFont } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+const font = new CanvasContextFont(ctx);
+
+// Title
+font.set({ family: "Arial", size: 48, weight: "bold", align: "center" });
+ctx.fillText("Title", 400, 50);
+
+// Subtitle
+font.set({ size: 24, weight: "regular", style: "italic" });
+ctx.fillText("Subtitle", 400, 100);
+
+// Body text
+font.set({ size: 16, style: undefined, align: "left" });
+ctx.fillText("Body text goes here...", 50, 150);
+```
+
+```typescript Reading Properties
+import { CanvasContextFont } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 24,
+});
+
+console.log(font.family); // "Arial"
+console.log(font.size);   // 24
+console.log(font.align);  // "start"
+
+// Update and read
+font.setSize(32);
+console.log(font.size);   // 32
+```
+</CodeGroup>
+
+---
+
+## Types
+
+### CanvasContextFontProps
+
+```typescript
+interface CanvasContextFontProps {
+  family?: string;
+  style?: StrOr<ContextFontStyle>;
+  weight?: StrOr<ContextFontWeight>;
+  size?: number;
+  align?: CanvasTextAlign;
+  baseline?: CanvasTextBaseline;
+  kerning?: CanvasFontKerning;
+}
+```
+
+### ContextFontStyle
+
+```typescript
+type ContextFontStyle = 
+  | "italic" 
+  | "italic underline" 
+  | "italic strikethrough"
+  | "italic strikethrough underline"
+  | "strikethrough" 
+  | "strikethrough underline"
+  | "underline";
+```
+
+### ContextFontWeight
+
+```typescript
+type ContextFontWeight = 
+  | "thin" | "extralight" | "light" | "regular" 
+  | "medium" | "semibold" | "bold" | "extrabold" | "black"
+  | "100" | "200" | "300" | "400" | "500" | "600" | "700" | "800" | "900";
+```
+
+### ContextTextMetrics
+
+```typescript
+interface ContextTextMetrics {
+  readonly actualBoundingBoxAscent: number;
+  readonly actualBoundingBoxDescent: number;
+  readonly actualBoundingBoxLeft: number;
+  readonly actualBoundingBoxRight: number;
+  readonly fontBoundingBoxAscent: number;
+  readonly fontBoundingBoxDescent: number;
+  readonly width: number;
+  readonly height: number;
+}
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use method chaining for multiple updates">
+    When setting multiple properties, chain the setter methods for cleaner code:
+    ```typescript
+    font.setFamily("Arial").setSize(24).setWeight("bold");
+    ```
+  </Accordion>
+  
+  <Accordion title="Use set() for bulk updates">
+    When updating many properties at once, use the `set()` method:
+    ```typescript
+    font.set({
+      family: "Helvetica",
+      size: 32,
+      weight: "bold",
+      align: "center"
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Reuse font instances">
+    Create a single `CanvasContextFont` instance and reuse it with different settings:
+    ```typescript
+    const font = new CanvasContextFont(ctx);
+    
+    // Title
+    font.set({ size: 48, weight: "bold" });
+    ctx.fillText("Title", x, y);
+    
+    // Body
+    font.set({ size: 16, weight: "regular" });
+    ctx.fillText("Body", x, y + 60);
+    ```
+  </Accordion>
+  
+  <Accordion title="Set baseline for vertical alignment">
+    Use `baseline` to control vertical text positioning:
+    - `"top"` - Text drawn below the y coordinate
+    - `"middle"` - Text centered on y coordinate
+    - `"alphabetic"` - Default baseline (good for multi-line text)
+    - `"bottom"` - Text drawn above the y coordinate
+  </Accordion>
+</AccordionGroup>

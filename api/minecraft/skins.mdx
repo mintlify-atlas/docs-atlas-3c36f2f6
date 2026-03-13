@@ -1,0 +1,582 @@
+---
+title: Skins API
+description: Render and fetch Minecraft player skins with extensive customization
+---
+
+The Skins API module provides powerful functions for rendering Minecraft player skins with various poses, camera angles, and customization options.
+
+## Skin Rendering
+
+### fetchSkinRender
+
+```typescript
+function fetchSkinRender<T extends SkinRenderType = "default">(
+  nickOrUUID: string,
+  type?: T,
+  crop?: SkinRenderTypeCrop[T],
+  options?: SkinRenderOptions
+): Promise<FetchSkinRenderResult>
+```
+
+Fetches a rendered image of a Minecraft player's skin with customizable pose and camera settings.
+
+<ParamField path="nickOrUUID" type="string" required>
+  Minecraft username or UUID
+</ParamField>
+
+<ParamField path="type" type="SkinRenderType">
+  Render type/pose (default: `"default"`)
+  
+  Available types: `"default"`, `"marching"`, `"walking"`, `"crouching"`, `"crossed"`, `"criss_cross"`, `"ultimate"`, `"isometric"`, `"head"`, `"custom"`, `"cheering"`, `"relaxing"`, `"trudging"`, `"cowering"`, `"pointing"`, `"lunging"`, `"dungeons"`, `"facepalm"`, `"sleeping"`, `"dead"`, `"archer"`, `"kicking"`, `"mojavatar"`, `"reading"`, `"high_ground"`, `"clown"`, `"bitzel"`, `"pixel"`, `"ornament"`, `"skin"`, `"profile"`
+</ParamField>
+
+<ParamField path="crop" type="SkinRenderTypeCrop[T]">
+  Crop type (varies by render type)
+  
+  Common crops: `"full"`, `"bust"`, `"face"`, `"head"`
+</ParamField>
+
+<ParamField path="options" type="SkinRenderOptions">
+  Advanced rendering options
+  
+  <Expandable title="properties">
+    <ParamField path="camera" type="Partial<SkinRenderCameraOptions>">
+      Camera positioning and settings
+    </ParamField>
+    <ParamField path="lighting" type="Partial<SkinRenderLightingOptions>">
+      Light positioning and colors
+    </ParamField>
+    <ParamField path="model" type="Partial<SkinRenderModelOptions>">
+      Model and texture customization
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="FetchSkinRenderResult">
+  Result object containing rendered image or error information
+  
+  <Expandable title="success response">
+    ```typescript
+    {
+      success: true,
+      data: {
+        buffer: Buffer,          // PNG image buffer
+        arrayBuffer: ArrayBuffer,
+        url: string,             // Render URL
+        response: Response       // Raw fetch response
+      }
+    }
+    ```
+  </Expandable>
+  
+  <Expandable title="error response">
+    ```typescript
+    {
+      success: false,
+      error: string,
+      code: number
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Basic Render
+import { fetchSkinRender } from "@magicyan/minecraft";
+import { writeFileSync } from "fs";
+
+const result = await fetchSkinRender("Notch");
+
+if (result.success) {
+  writeFileSync("notch.png", result.data.buffer);
+  console.log("Skin rendered!");
+}
+```
+
+```typescript Different Poses
+import { fetchSkinRender } from "@magicyan/minecraft";
+
+// Standing pose (default)
+const standing = await fetchSkinRender("Player", "default", "full");
+
+// Walking pose
+const walking = await fetchSkinRender("Player", "walking", "full");
+
+// Crouching
+const crouching = await fetchSkinRender("Player", "crouching", "bust");
+
+// Head only
+const head = await fetchSkinRender("Player", "head", "full");
+```
+
+```typescript Discord Command
+import { fetchSkinRender } from "@magicyan/minecraft";
+import { AttachmentBuilder, EmbedBuilder } from "discord.js";
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.commandName !== "skin") return;
+  
+  await interaction.deferReply();
+  
+  const username = interaction.options.getString("username", true);
+  const pose = interaction.options.getString("pose") ?? "default";
+  
+  const result = await fetchSkinRender(username, pose as any, "full");
+  
+  if (!result.success) {
+    await interaction.editReply({ content: `Failed to render skin: ${result.error}` });
+    return;
+  }
+  
+  const attachment = new AttachmentBuilder(result.data.buffer, { name: "skin.png" });
+  const embed = new EmbedBuilder()
+    .setTitle(`${username}'s Skin`)
+    .setDescription(`Pose: ${pose}`)
+    .setImage("attachment://skin.png")
+    .setColor("#00aa00");
+  
+  await interaction.editReply({ embeds: [embed], files: [attachment] });
+});
+```
+
+```typescript Custom Camera Settings
+import { fetchSkinRender } from "@magicyan/minecraft";
+
+const result = await fetchSkinRender("Notch", "default", "full", {
+  camera: {
+    cameraPosition: { x: 20, y: 30, z: -40 },
+    cameraFocalPoint: { x: 0, y: 18, z: 0 },
+    cameraFOV: 60,
+    cameraWidth: 800,
+    cameraHeight: 800,
+  },
+  lighting: {
+    dirLightColor: "ffaa00",
+    dirLightIntensity: 1.2,
+    globalLightColor: "ffffff",
+  },
+});
+```
+
+```typescript Custom Skin URL
+import { fetchSkinRender } from "@magicyan/minecraft";
+
+const result = await fetchSkinRender("CustomSkin", "default", "full", {
+  model: {
+    skinUrl: "https://example.com/custom-skin.png",
+    skinType: "slim",
+    capeEnabled: false,
+  },
+});
+```
+</CodeGroup>
+
+---
+
+## Skin Route Generation
+
+### skinRoute
+
+```typescript
+function skinRoute<T extends SkinRenderType>(
+  nickOrUUID: string,
+  type?: T,
+  crop?: SkinRenderTypeCrop[T],
+  options?: SkinRenderOptions
+): string
+```
+
+Generates a URL for a skin render without fetching the image.
+
+<ParamField path="nickOrUUID" type="string" required>
+  Minecraft username or UUID
+</ParamField>
+
+<ParamField path="type" type="SkinRenderType">
+  Render type/pose (default: `"default"`)
+</ParamField>
+
+<ParamField path="crop" type="SkinRenderTypeCrop[T]">
+  Crop type
+</ParamField>
+
+<ParamField path="options" type="SkinRenderOptions">
+  Rendering options
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Full URL to the rendered skin image
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Generate URLs
+import { skinRoute } from "@magicyan/minecraft";
+
+const url = skinRoute("Notch", "default", "full");
+console.log(url);
+// https://starlightskins.lunareclipse.studio/render/default/Notch/full
+
+const headUrl = skinRoute("Notch", "head", "full");
+console.log(headUrl);
+```
+
+```typescript Discord Embed with URL
+import { skinRoute } from "@magicyan/minecraft";
+import { EmbedBuilder } from "discord.js";
+
+const embed = new EmbedBuilder()
+  .setTitle("Notch's Skin")
+  .setImage(skinRoute("Notch", "default", "full"))
+  .setThumbnail(skinRoute("Notch", "head", "full"))
+  .setColor("#00aa00");
+
+await interaction.reply({ embeds: [embed] });
+```
+
+```typescript HTML Image Tag
+import { skinRoute } from "@magicyan/minecraft";
+
+const html = `
+  <img src="${skinRoute("Notch", "isometric", "bust")}" alt="Notch's Skin">
+`;
+```
+</CodeGroup>
+
+---
+
+## Skin Information
+
+### fetchSkinInfo
+
+```typescript
+function fetchSkinInfo(nickOrUUID: string): Promise<FetchSkinInfoResult>
+```
+
+Fetches metadata about a player's skin.
+
+<ParamField path="nickOrUUID" type="string" required>
+  Minecraft username or UUID
+</ParamField>
+
+<ResponseField name="return" type="FetchSkinInfoResult">
+  Result object containing skin information or error
+  
+  <Expandable title="success response">
+    ```typescript
+    {
+      success: true,
+      data: {
+        playerUUID: string,
+        skinUrl: string,
+        userCape: string,
+        processedSkinUrl: string,
+        skinType: "slim" | "wide",
+        skinTextureWidth: number,
+        skinTextureHeight: number
+      }
+    }
+    ```
+  </Expandable>
+  
+  <Expandable title="error response">
+    ```typescript
+    {
+      success: false,
+      error: string,
+      code: number
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Get Skin Metadata
+import { fetchSkinInfo } from "@magicyan/minecraft";
+
+const result = await fetchSkinInfo("Notch");
+
+if (result.success) {
+  console.log(`UUID: ${result.data.playerUUID}`);
+  console.log(`Skin URL: ${result.data.skinUrl}`);
+  console.log(`Model: ${result.data.skinType}`);
+  console.log(`Dimensions: ${result.data.skinTextureWidth}x${result.data.skinTextureHeight}`);
+  
+  if (result.data.userCape) {
+    console.log(`Cape: ${result.data.userCape}`);
+  }
+}
+```
+
+```typescript Check Skin Model Type
+import { fetchSkinInfo } from "@magicyan/minecraft";
+
+async function isSlimSkin(username: string): Promise<boolean> {
+  const result = await fetchSkinInfo(username);
+  return result.success && result.data.skinType === "slim";
+}
+
+const slim = await isSlimSkin("Alex");
+console.log(slim ? "Slim (Alex) model" : "Wide (Steve) model");
+```
+
+```typescript Download Raw Skin
+import { fetchSkinInfo } from "@magicyan/minecraft";
+import { writeFileSync } from "fs";
+
+const result = await fetchSkinInfo("Notch");
+
+if (result.success) {
+  const response = await fetch(result.data.skinUrl);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  writeFileSync("notch-skin.png", buffer);
+}
+```
+</CodeGroup>
+
+---
+
+## Render Types
+
+### Available Poses
+
+The following render types are available:
+
+<AccordionGroup>
+  <Accordion title="Basic Poses">
+    - **default**: Standard standing pose
+    - **walking**: Walking animation pose
+    - **marching**: Marching pose
+    - **crouching**: Sneaking/crouching pose
+    - **sleeping**: Laying down pose
+  </Accordion>
+  
+  <Accordion title="Action Poses">
+    - **cheering**: Arms raised in celebration
+    - **pointing**: Pointing forward
+    - **lunging**: Attack/lunge pose
+    - **archer**: Drawing a bow
+    - **kicking**: Kicking pose
+    - **facepalm**: Hand on face
+  </Accordion>
+  
+  <Accordion title="Relaxed Poses">
+    - **relaxing**: Sitting/relaxed pose
+    - **crossed**: Arms crossed
+    - **criss_cross**: Sitting cross-legged
+    - **cowering**: Defensive pose
+    - **trudging**: Walking tiredly
+    - **reading**: Reading a book
+  </Accordion>
+  
+  <Accordion title="Special Renders">
+    - **head**: Head-only render
+    - **isometric**: Isometric view
+    - **ultimate**: Dramatic hero pose
+    - **dungeons**: Minecraft Dungeons style
+    - **mojavatar**: Mojang avatar style
+    - **ornament**: Ornament/decoration style
+    - **pixel**: Pixelated style
+    - **skin**: Raw skin texture
+    - **profile**: Profile card style
+  </Accordion>
+  
+  <Accordion title="Custom">
+    - **custom**: Use custom 3D models via options
+    - **high_ground**: "I have the high ground" pose
+    - **clown**: Special clown pose
+    - **bitzel**: Special Bitzel pose
+    - **dead**: Laying down (death) pose
+  </Accordion>
+</AccordionGroup>
+
+### Crop Types by Render Type
+
+```typescript
+type SkinRenderTypeCrop = {
+  default: "full" | "bust" | "face";
+  marching: "full" | "bust" | "face";
+  walking: "full" | "bust" | "face";
+  crouching: "full" | "bust" | "face";
+  // ... most poses support: "full", "bust", "face"
+  head: "full"; // Only full crop
+  isometric: "full" | "bust" | "face" | "head";
+  sleeping: "full" | "bust";
+  ornament: "full";
+  skin: "default" | "processed" | "barebones";
+  // ... and more
+};
+```
+
+---
+
+## Advanced Options
+
+### Camera Options
+
+```typescript
+interface SkinRenderCameraOptions {
+  cameraPosition: { x: number | string, y: number | string, z: number | string };
+  cameraFocalPoint: { x: number | string, y: number | string, z: number | string };
+  cameraWidth: number;          // Max 3840px
+  cameraHeight: number;         // Max 3840px
+  renderScale: number;          // Scale factor (> 0)
+  cameraFOV: number;           // Field of view (degrees)
+  isometric: boolean;          // Orthographic camera
+  borderHighlight: boolean;    // Enable border highlight
+  borderHighlightColor: string; // Hex color
+  borderHighlightRadius: number; // Border size
+  dropShadow: boolean;         // Enable drop shadow
+}
+```
+
+### Lighting Options
+
+```typescript
+interface SkinRenderLightingOptions {
+  dirLightPos: { x: number | string, y: number | string, z: number | string };
+  dirLightColor: string;       // Hex color (e.g., "ffffff")
+  dirLightIntensity: number;   // Light intensity adjustment
+  globalLightColor: string;    // Hex color
+  globalLightIntensity: number; // Global light adjustment
+}
+```
+
+### Model Options
+
+```typescript
+interface SkinRenderModelOptions {
+  skinUrl: string;             // Custom skin URL
+  skinType: "slim" | "wide";  // Model type
+  wideModel: string;           // Custom wide model URL
+  slimModel: string;           // Custom slim model URL
+  propModel: string;           // Prop OBJ model URL
+  propTexture: string;         // Prop texture URL
+  capeModel: string;           // Custom cape model URL
+  capeTexture: string;         // Custom cape texture URL
+  capeEnabled: boolean;        // Show/hide cape
+  propModelShading: boolean;   // Enable prop shading
+  capeModelShading: boolean;   // Enable cape shading
+  playerModelShading: boolean; // Enable player shading
+}
+```
+
+---
+
+## Types
+
+### SkinRenderType
+
+```typescript
+type SkinRenderType = 
+  | "default" | "marching" | "walking" | "crouching" | "crossed"
+  | "criss_cross" | "ultimate" | "isometric" | "head" | "custom"
+  | "cheering" | "relaxing" | "trudging" | "cowering" | "pointing"
+  | "lunging" | "dungeons" | "facepalm" | "sleeping" | "dead"
+  | "archer" | "kicking" | "mojavatar" | "reading" | "high_ground"
+  | "clown" | "bitzel" | "pixel" | "ornament" | "skin" | "profile";
+```
+
+### SkinInfo
+
+```typescript
+interface SkinInfo {
+  playerUUID: string;
+  skinUrl: string;
+  userCape: string;
+  processedSkinUrl: string;
+  skinType: "slim" | "wide";
+  skinTextureWidth: number;
+  skinTextureHeight: number;
+}
+```
+
+---
+
+## API Endpoint
+
+This module uses the Starlight Skins API:
+
+- **Base URL**: `https://starlightskins.lunareclipse.studio`
+- **Render**: `/render/{type}/{nickOrUUID}/{crop}`
+- **Info**: `/info/user/{nickOrUUID}`
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Choose appropriate crop types">
+    Use the correct crop for your use case:
+    - **full**: Complete body render (best for showcasing poses)
+    - **bust**: Upper body only (good for profile pictures)
+    - **face**: Face closeup (avatars, small displays)
+    - **head**: Head-only render (icons)
+  </Accordion>
+  
+  <Accordion title="Cache rendered skins">
+    Cache skin renders to reduce API calls and improve performance:
+    ```typescript
+    const skinCache = new Map<string, Buffer>();
+    
+    async function getCachedSkin(username: string, type: string) {
+      const key = `${username}-${type}`;
+      
+      if (skinCache.has(key)) {
+        return skinCache.get(key);
+      }
+      
+      const result = await fetchSkinRender(username, type as any);
+      if (result.success) {
+        skinCache.set(key, result.data.buffer);
+        return result.data.buffer;
+      }
+      return null;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use skinRoute for embeds">
+    Use `skinRoute()` instead of `fetchSkinRender()` when embedding in Discord:
+    ```typescript
+    // Better: Let Discord fetch the image
+    const embed = new EmbedBuilder()
+      .setImage(skinRoute("Notch", "default", "full"));
+    
+    // Avoid: Fetching and uploading as attachment (uses more bandwidth)
+    const result = await fetchSkinRender("Notch");
+    // ...
+    ```
+  </Accordion>
+  
+  <Accordion title="Validate render types">
+    The `skinRoute` function validates crop types automatically:
+    ```typescript
+    // This will throw an error (head render doesn't support bust crop)
+    try {
+      skinRoute("Notch", "head", "bust");
+    } catch (error) {
+      console.error(error.message);
+      // Invalid crop "bust" for render type "head"
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle custom skins carefully">
+    When using custom skin URLs, always specify the model type:
+    ```typescript
+    await fetchSkinRender("Custom", "default", "full", {
+      model: {
+        skinUrl: "https://example.com/skin.png",
+        skinType: "slim", // Important: specify model type
+      },
+    });
+    ```
+  </Accordion>
+</AccordionGroup>

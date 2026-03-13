@@ -1,0 +1,157 @@
+---
+title: "Convert"
+description: "Color conversion utilities between hex and RGB formats"
+---
+
+The convert module provides utilities for converting between hexadecimal color strings and RGB numeric values.
+
+## hexToRgb
+
+Converts a hexadecimal color string to its numeric RGB representation.
+
+<ParamField path="color" type="Color" required>
+  A hexadecimal color string (e.g., `"#FFFFFF"` or `"FFFFFF"`). The `#` prefix is optional
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="number">
+  A number representing the RGB value parsed from the hexadecimal string
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript White Color
+import { hexToRgb } from '@magicyan/core';
+
+const rgb = hexToRgb("#FFFFFF");
+console.log(rgb); // 16777215
+```
+
+```typescript Without Hash
+import { hexToRgb } from '@magicyan/core';
+
+const rgb = hexToRgb("000000");
+console.log(rgb); // 0
+```
+
+```typescript Custom Color
+import { hexToRgb } from '@magicyan/core';
+
+const rgb = hexToRgb("#FF5733");
+console.log(rgb); // 16724755
+```
+
+```typescript Discord Embed Color
+import { hexToRgb } from '@magicyan/core';
+
+const embedColor = hexToRgb("#5865F2"); // Discord Blurple
+console.log(embedColor); // 5793522
+
+// Use in Discord.js
+const embed = new EmbedBuilder()
+  .setColor(embedColor)
+  .setDescription("Blurple embed!");
+```
+
+</CodeGroup>
+
+---
+
+## rgbToHex
+
+Converts a numeric RGB value to its hexadecimal color string representation.
+
+<ParamField path="rgb" type="number" required>
+  The numeric RGB value to convert
+</ParamField>
+
+<ParamField path="includeHash" type="boolean">
+  Whether to prefix the result with `#`. Defaults to `true`
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="string">
+  A hexadecimal color string representing the RGB value, optionally prefixed with `#`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript With Hash Prefix
+import { rgbToHex } from '@magicyan/core';
+
+const hex = rgbToHex(16777215);
+console.log(hex); // "#ffffff"
+```
+
+```typescript Without Hash
+import { rgbToHex } from '@magicyan/core';
+
+const hex = rgbToHex(0, false);
+console.log(hex); // "000000"
+```
+
+```typescript Custom Color
+import { rgbToHex } from '@magicyan/core';
+
+const hex = rgbToHex(16724755);
+console.log(hex); // "#ff5733"
+```
+
+```typescript Convert Back and Forth
+import { hexToRgb, rgbToHex } from '@magicyan/core';
+
+const originalHex = "#FF5733";
+const rgb = hexToRgb(originalHex);
+const backToHex = rgbToHex(rgb);
+
+console.log(originalHex); // "#FF5733"
+console.log(rgb);         // 16724755
+console.log(backToHex);   // "#ff5733"
+```
+
+```typescript CSS Generation
+import { rgbToHex } from '@magicyan/core';
+
+const colors = [16711680, 65280, 255];
+const cssColors = colors.map(rgb => rgbToHex(rgb));
+
+console.log(cssColors);
+// ["#ff0000", "#00ff00", "#0000ff"]
+// Red, Green, Blue
+```
+
+</CodeGroup>
+
+---
+
+## Color Type
+
+Type definition for color strings.
+
+```typescript
+type Color = `#${string}` | string;
+```
+
+Accepts any string, but is designed to work with hexadecimal color strings with or without the `#` prefix.
+
+### Examples
+
+```typescript
+import { hexToRgb } from '@magicyan/core';
+
+// All valid Color types
+const color1: Color = "#FF5733";
+const color2: Color = "FF5733";
+const color3: Color = "#fff";
+const color4: Color = "000";
+
+// Use with conversion functions
+const rgb1 = hexToRgb(color1);
+const rgb2 = hexToRgb(color2);
+```

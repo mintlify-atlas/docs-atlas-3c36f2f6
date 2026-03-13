@@ -1,0 +1,257 @@
+---
+title: "Math"
+description: "Mathematical utilities for random numbers and parsing"
+---
+
+The math module provides utilities for generating random numbers and parsing numeric values with fallback defaults.
+
+## randomNumber
+
+Generates a random integer between the specified minimum and maximum values (inclusive).
+
+<ParamField path="min" type="number" required>
+  The minimum value (inclusive)
+</ParamField>
+
+<ParamField path="max" type="number" required>
+  The maximum value (inclusive)
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="number">
+  A random integer between min and max (inclusive)
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Basic Usage
+import { randomNumber } from '@magicyan/core';
+
+const dice = randomNumber(1, 6);
+console.log(dice); // Random number between 1 and 6
+```
+
+```typescript Large Range
+import { randomNumber } from '@magicyan/core';
+
+const id = randomNumber(1000, 9999);
+console.log(id); // Random 4-digit number
+```
+
+```typescript Negative Range
+import { randomNumber } from '@magicyan/core';
+
+const temp = randomNumber(-10, 10);
+console.log(temp); // Random number between -10 and 10
+```
+
+</CodeGroup>
+
+---
+
+## random.int
+
+Generates a random integer between the specified minimum and maximum values (inclusive).
+
+<ParamField path="min" type="number" required>
+  The minimum value (inclusive)
+</ParamField>
+
+<ParamField path="max" type="number" required>
+  The maximum value (inclusive)
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="number">
+  A random integer between min and max (inclusive)
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Random Integer
+import { random } from '@magicyan/core';
+
+const value = random.int(1, 100);
+console.log(value); // Random integer between 1 and 100
+```
+
+```typescript Random Index
+import { random } from '@magicyan/core';
+
+const array = ['a', 'b', 'c', 'd', 'e'];
+const randomIndex = random.int(0, array.length - 1);
+console.log(array[randomIndex]); // Random element from array
+```
+
+</CodeGroup>
+
+---
+
+## random.float
+
+Generates a random floating-point number between the specified minimum and maximum values.
+
+<ParamField path="min" type="number" required>
+  The minimum value (inclusive)
+</ParamField>
+
+<ParamField path="max" type="number" required>
+  The maximum value (exclusive)
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="number">
+  A random floating-point number between min (inclusive) and max (exclusive)
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Random Float
+import { random } from '@magicyan/core';
+
+const value = random.float(0, 1);
+console.log(value); // Random float between 0 and 1
+```
+
+```typescript Random Percentage
+import { random } from '@magicyan/core';
+
+const percentage = random.float(0, 100);
+console.log(percentage); // Random float between 0 and 100
+```
+
+```typescript Random Decimal Range
+import { random } from '@magicyan/core';
+
+const price = random.float(9.99, 99.99);
+console.log(price.toFixed(2)); // Random price with 2 decimals
+```
+
+</CodeGroup>
+
+---
+
+## parseIntOrDefault
+
+Parses a string to an integer, returning a default value if parsing fails.
+
+<ParamField path="value" type="string" required>
+  The string to parse
+</ParamField>
+
+<ParamField path="defaultValue" type="number" required>
+  The value to return if parsing fails
+</ParamField>
+
+<ParamField path="radix" type="number">
+  The radix (base) to use for parsing. Defaults to 10
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="number">
+  The parsed integer, or the default value if parsing fails (NaN)
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Valid Integer
+import { parseIntOrDefault } from '@magicyan/core';
+
+const value = parseIntOrDefault("42", 0);
+console.log(value); // 42
+```
+
+```typescript Invalid String
+import { parseIntOrDefault } from '@magicyan/core';
+
+const value = parseIntOrDefault("not a number", 0);
+console.log(value); // 0
+```
+
+```typescript Hexadecimal
+import { parseIntOrDefault } from '@magicyan/core';
+
+const value = parseIntOrDefault("FF", 0, 16);
+console.log(value); // 255
+```
+
+```typescript Environment Variable
+import { parseIntOrDefault } from '@magicyan/core';
+
+const port = parseIntOrDefault(process.env.PORT || "", 3000);
+console.log(port); // 3000 if PORT is not set or invalid
+```
+
+</CodeGroup>
+
+---
+
+## parseFloatOrDefault
+
+Parses a string to a floating-point number, returning a default value if parsing fails.
+
+<ParamField path="value" type="string" required>
+  The string to parse
+</ParamField>
+
+<ParamField path="defaultValue" type="number" required>
+  The value to return if parsing fails
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="number">
+  The parsed floating-point number, or the default value if parsing fails (NaN)
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Valid Float
+import { parseFloatOrDefault } from '@magicyan/core';
+
+const value = parseFloatOrDefault("3.14", 0);
+console.log(value); // 3.14
+```
+
+```typescript Invalid String
+import { parseFloatOrDefault } from '@magicyan/core';
+
+const value = parseFloatOrDefault("invalid", 0.0);
+console.log(value); // 0.0
+```
+
+```typescript Configuration Value
+import { parseFloatOrDefault } from '@magicyan/core';
+
+const threshold = parseFloatOrDefault(
+  process.env.THRESHOLD || "", 
+  0.75
+);
+console.log(threshold); // 0.75 if THRESHOLD is not set or invalid
+```
+
+```typescript Decimal Numbers
+import { parseFloatOrDefault } from '@magicyan/core';
+
+const price = parseFloatOrDefault("19.99", 0);
+console.log(price); // 19.99
+
+const invalid = parseFloatOrDefault("$19.99", 0);
+console.log(invalid); // 0 (parsing fails due to $)
+```
+
+</CodeGroup>

@@ -1,97 +1,95 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Magicyan Documentation"
+description: "TypeScript utility libraries for Discord bot development with discord.js"
 ---
 
-## Setting up
+<img
+  className="block dark:hidden"
+  src="https://media.brand.dev/1f1e4836-c9b0-4d21-a221-1411146261a9.svg"
+  alt="Magicyan Logo"
+/>
+<img
+  className="hidden dark:block"
+  src="https://media.brand.dev/862e10d4-beb2-49d1-91ee-e52387c286bd.png"
+  alt="Magicyan Logo"
+/>
 
-Get your documentation site up and running in minutes.
+## Welcome to Magicyan
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+Magicyan is a collection of TypeScript utility libraries designed to simplify and enhance Discord bot development with discord.js. Build powerful Discord bots with less boilerplate and more functionality.
 
-## Make it yours
+## Quick Start
 
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Get started with Magicyan in your project
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Build your first bot with Magicyan
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Packages Overview" icon="boxes-stacked" href="/packages/overview">
+    Explore all available packages
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="API Reference" icon="code" href="/api/core/format">
+    Comprehensive API documentation
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Key Features
 
-Everything you need to create world-class documentation.
+<CardGroup cols={3}>
+  <Card title="Core Utilities" icon="wrench">
+    Format, validation, timers, and essential helpers for any TypeScript project
+  </Card>
+  <Card title="Discord Helpers" icon="discord">
+    Streamlined functions for channels, members, roles, embeds, and components
+  </Card>
+  <Card title="Extended Events" icon="bolt">
+    Additional Discord events like member connect/disconnect, timeouts, and more
+  </Card>
+  <Card title="UI Components" icon="grid">
+    Pre-built menus and prompts for interactive Discord experiences
+  </Card>
+  <Card title="Canvas Rendering" icon="palette">
+    Utilities for creating dynamic images and graphics
+  </Card>
+  <Card title="Minecraft Integration" icon="cube">
+    API wrappers for Mojang, server status, and skin data
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Featured Packages
 
-## Need inspiration?
+<Accordion title="@magicyan/core">
+  Lightweight utility functions for common tasks including formatting, validation, timers, date manipulation, and mathematical operations.
+</Accordion>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
+<Accordion title="@magicyan/discord">
+  Comprehensive helper functions for Discord.js including channel management, member operations, role utilities, embed builders, and component creation.
+</Accordion>
+
+<Accordion title="@magicyan/discord-events">
+  Extended event system for Discord.js providing additional events such as guild member voice state changes, timeout management, and enhanced audit log events.
+</Accordion>
+
+<Accordion title="@magicyan/discord-ui">
+  Interactive UI components including navigation menus and user prompts to create rich Discord bot experiences.
+</Accordion>
+
+## Get Started Now
+
+<Steps>
+  <Step title="Install Magicyan">
+    Choose the packages you need and install them via npm, yarn, or pnpm
+  </Step>
+  <Step title="Import utilities">
+    Import the functions and utilities you need into your Discord bot project
+  </Step>
+  <Step title="Build faster">
+    Use Magicyan's helpers to reduce boilerplate and ship features quickly
+  </Step>
+</Steps>
+
+<Card title="View on GitHub" icon="github" href="https://github.com/rinckodev/magicyan">
+  Explore the source code, contribute, or report issues
 </Card>

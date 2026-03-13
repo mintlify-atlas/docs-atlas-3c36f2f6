@@ -1,0 +1,402 @@
+---
+title: Mojang API
+description: Fetch Minecraft player profiles and session data from Mojang APIs
+---
+
+The Mojang API module provides functions to interact with official Minecraft/Mojang services for player profile lookups.
+
+## Player Profiles
+
+### fetchMinecraftProfile
+
+```typescript
+function fetchMinecraftProfile(nick: string): Promise<FetchMinecraftProfileResult>
+```
+
+Fetches a Minecraft player profile by username.
+
+<ParamField path="nick" type="string" required>
+  The Minecraft username to lookup (case-insensitive)
+</ParamField>
+
+<ResponseField name="return" type="FetchMinecraftProfileResult">
+  Result object containing player profile or error information
+  
+  <Expandable title="success response">
+    ```typescript
+    {
+      success: true,
+      data: {
+        id: string,        // Player UUID
+        name: string,      // Player name (case-sensitive)
+        legacy?: boolean,  // True if legacy account (unmigrated)
+        demo?: boolean     // True if demo account (no game ownership)
+      }
+    }
+    ```
+  </Expandable>
+  
+  <Expandable title="error response">
+    ```typescript
+    {
+      success: false,
+      error: string,
+      code: number
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Basic Lookup
+import { fetchMinecraftProfile } from "@magicyan/minecraft";
+
+const result = await fetchMinecraftProfile("Notch");
+
+if (result.success) {
+  console.log(`UUID: ${result.data.id}`);
+  console.log(`Name: ${result.data.name}`);
+  console.log(`Legacy: ${result.data.legacy ?? false}`);
+} else {
+  console.error(`Error: ${result.error} (${result.code})`);
+}
+```
+
+```typescript Discord Command
+import { fetchMinecraftProfile } from "@magicyan/minecraft";
+import { EmbedBuilder } from "discord.js";
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.commandName !== "mcprofile") return;
+  
+  const username = interaction.options.getString("username", true);
+  const result = await fetchMinecraftProfile(username);
+  
+  if (!result.success) {
+    await interaction.reply({ content: `Player not found: ${username}`, ephemeral: true });
+    return;
+  }
+  
+  const embed = new EmbedBuilder()
+    .setTitle(`Minecraft Profile: ${result.data.name}`)
+    .addFields(
+      { name: "UUID", value: result.data.id },
+      { name: "Legacy Account", value: result.data.legacy ? "Yes" : "No" }
+    )
+    .setThumbnail(`https://crafatar.com/avatars/${result.data.id}`);
+  
+  await interaction.reply({ embeds: [embed] });
+});
+```
+
+```typescript Error Handling
+import { fetchMinecraftProfile } from "@magicyan/minecraft";
+
+async function getPlayerUUID(username: string): Promise<string | null> {
+  const result = await fetchMinecraftProfile(username);
+  
+  if (!result.success) {
+    if (result.code === 404) {
+      console.log(`Player "${username}" does not exist`);
+    } else if (result.code === 429) {
+      console.log("Rate limited, try again later");
+    } else {
+      console.log(`API error: ${result.error}`);
+    }
+    return null;
+  }
+  
+  return result.data.id;
+}
+```
+</CodeGroup>
+
+---
+
+## Player Sessions
+
+### fetchMinecraftProfileSession
+
+```typescript
+function fetchMinecraftProfileSession(UUID: string): Promise<FetchMinecraftProfileSessionResult>
+```
+
+Fetches detailed player session data including skin and cape information.
+
+<ParamField path="UUID" type="string" required>
+  The player's UUID (with or without dashes)
+</ParamField>
+
+<ResponseField name="return" type="FetchMinecraftProfileSessionResult">
+  Result object containing session data or error information
+  
+  <Expandable title="success response">
+    ```typescript
+    {
+      success: true,
+      data: {
+        id: string,
+        name: string,
+        legacy?: boolean,
+        properties: Array<{
+          timestamp: number,
+          profileId: string,
+          profileName: string,
+          textures: {
+            SKIN: {
+              url: string,
+              metadata?: {
+                model: "slim"
+              }
+            },
+            CAPE: {
+              url: string
+            }
+          }
+        }>
+      }
+    }
+    ```
+  </Expandable>
+  
+  <Expandable title="error response">
+    ```typescript
+    {
+      success: false,
+      error: string,
+      code: number
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Get Skin URL
+import { fetchMinecraftProfileSession } from "@magicyan/minecraft";
+
+const uuid = "069a79f444e94726a5befca90e38aaf5"; // Notch's UUID
+const result = await fetchMinecraftProfileSession(uuid);
+
+if (result.success && result.data.properties.length > 0) {
+  const textures = result.data.properties[0].textures;
+  
+  if (textures.SKIN) {
+    console.log(`Skin URL: ${textures.SKIN.url}`);
+    console.log(`Skin Model: ${textures.SKIN.metadata?.model ?? "classic"}`);
+  }
+  
+  if (textures.CAPE) {
+    console.log(`Cape URL: ${textures.CAPE.url}`);
+  }
+}
+```
+
+```typescript Profile + Session Combo
+import { fetchMinecraftProfile, fetchMinecraftProfileSession } from "@magicyan/minecraft";
+
+async function getPlayerTextures(username: string) {
+  // First, get the UUID
+  const profile = await fetchMinecraftProfile(username);
+  if (!profile.success) {
+    throw new Error(`Player not found: ${username}`);
+  }
+  
+  // Then, get the session data with textures
+  const session = await fetchMinecraftProfileSession(profile.data.id);
+  if (!session.success) {
+    throw new Error(`Failed to fetch session data`);
+  }
+  
+  const textures = session.data.properties[0]?.textures;
+  return {
+    uuid: profile.data.id,
+    name: profile.data.name,
+    skinUrl: textures?.SKIN?.url,
+    skinModel: textures?.SKIN?.metadata?.model ?? "classic",
+    capeUrl: textures?.CAPE?.url,
+  };
+}
+
+const data = await getPlayerTextures("Notch");
+console.log(data);
+```
+
+```typescript Discord Skin Preview
+import { fetchMinecraftProfile, fetchMinecraftProfileSession } from "@magicyan/minecraft";
+import { EmbedBuilder } from "discord.js";
+
+async function createSkinEmbed(username: string) {
+  const profile = await fetchMinecraftProfile(username);
+  if (!profile.success) return null;
+  
+  const session = await fetchMinecraftProfileSession(profile.data.id);
+  if (!session.success) return null;
+  
+  const textures = session.data.properties[0]?.textures;
+  const skinUrl = textures?.SKIN?.url;
+  const capeUrl = textures?.CAPE?.url;
+  
+  const embed = new EmbedBuilder()
+    .setTitle(`${profile.data.name}'s Skin`)
+    .setDescription(`UUID: \`${profile.data.id}\``)
+    .setColor("#00aa00");
+  
+  if (skinUrl) {
+    embed.setImage(skinUrl);
+    embed.addFields({
+      name: "Model",
+      value: textures.SKIN.metadata?.model ?? "classic"
+    });
+  }
+  
+  if (capeUrl) {
+    embed.addFields({ name: "Cape", value: "[View Cape](" + capeUrl + ")" });
+  }
+  
+  return embed;
+}
+```
+
+```typescript Check Skin Model
+import { fetchMinecraftProfileSession } from "@magicyan/minecraft";
+
+async function isSlimSkin(uuid: string): Promise<boolean> {
+  const result = await fetchMinecraftProfileSession(uuid);
+  
+  if (!result.success || result.data.properties.length === 0) {
+    return false;
+  }
+  
+  const skinData = result.data.properties[0].textures.SKIN;
+  return skinData?.metadata?.model === "slim";
+}
+
+const isSlim = await isSlimSkin("069a79f444e94726a5befca90e38aaf5");
+console.log(isSlim ? "Slim model (Alex)" : "Classic model (Steve)");
+```
+</CodeGroup>
+
+---
+
+## Types
+
+### MinecraftProfile
+
+```typescript
+interface MinecraftProfile {
+  /** UUID of the player */
+  id: string;
+  /** Name of the player (case-sensitive) */
+  name: string;
+  /** Included if account has not migrated to Mojang account */
+  legacy?: boolean;
+  /** Included if account does not own the game */
+  demo?: boolean;
+}
+```
+
+### MinecraftProfileSession
+
+```typescript
+interface MinecraftProfileSession extends Omit<MinecraftProfile, "demo"> {
+  properties: Array<{
+    timestamp: number;
+    profileId: string;
+    profileName: string;
+    textures: {
+      SKIN: {
+        url: string;
+        metadata?: {
+          model: "slim";
+        };
+      };
+      CAPE: {
+        url: string;
+      };
+    };
+  }>;
+}
+```
+
+### FetchResult
+
+```typescript
+type FetchResult<T> = 
+  | { success: true; data: T }
+  | { success: false; error: string; code: number };
+```
+
+---
+
+## API Endpoints
+
+This module uses the following official Mojang API endpoints:
+
+- **Profile Lookup**: `https://api.minecraftservices.com/minecraft/profile/lookup/name/{username}`
+- **Session Server**: `https://sessionserver.mojang.com/session/minecraft/profile/{uuid}`
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Handle rate limits">
+    Mojang APIs have rate limits. Always handle errors and implement retry logic:
+    ```typescript
+    if (!result.success && result.code === 429) {
+      // Wait and retry
+      await new Promise(resolve => setTimeout(resolve, 60000));
+      return fetchMinecraftProfile(username);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Cache profile data">
+    Cache UUID lookups to reduce API calls:
+    ```typescript
+    const uuidCache = new Map<string, string>();
+    
+    async function getCachedUUID(username: string) {
+      if (uuidCache.has(username)) {
+        return uuidCache.get(username);
+      }
+      const result = await fetchMinecraftProfile(username);
+      if (result.success) {
+        uuidCache.set(username, result.data.id);
+        return result.data.id;
+      }
+      return null;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use type guards for safety">
+    Always check the success property before accessing data:
+    ```typescript
+    const result = await fetchMinecraftProfile(username);
+    
+    if (result.success) {
+      // TypeScript knows result.data exists here
+      console.log(result.data.id);
+    } else {
+      // TypeScript knows result.error exists here
+      console.error(result.error);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Format UUIDs correctly">
+    UUIDs can be with or without dashes. Normalize them:
+    ```typescript
+    function formatUUID(uuid: string): string {
+      const cleaned = uuid.replace(/-/g, "");
+      return `${cleaned.slice(0, 8)}-${cleaned.slice(8, 12)}-${cleaned.slice(12, 16)}-${cleaned.slice(16, 20)}-${cleaned.slice(20)}`;
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

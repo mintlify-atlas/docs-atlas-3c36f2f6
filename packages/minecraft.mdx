@@ -1,0 +1,332 @@
+---
+title: "@magicyan/minecraft"
+description: "Minecraft API integrations for server status, player profiles, and skins"
+---
+
+## Overview
+
+`@magicyan/minecraft` provides typed API wrappers for various Minecraft services including Mojang profiles, server status checks, and player skin rendering. Perfect for Minecraft-themed Discord bots.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/minecraft
+```
+
+```bash yarn
+yarn add @magicyan/minecraft
+```
+
+```bash pnpm
+pnpm add @magicyan/minecraft
+```
+</CodeGroup>
+
+<Note>
+  Depends on `lodash ^4.17.21` for utility functions.
+</Note>
+
+## Modules
+
+### Mojang API
+
+Fetch player profiles and UUIDs:
+
+```typescript
+import { getProfile, getUUID } from '@magicyan/minecraft';
+
+// Get player UUID from username
+const uuid = await getUUID('Notch');
+console.log(uuid); // "069a79f4-44e9-4726-a5be-fca90e38aaf5"
+
+// Get full player profile
+const profile = await getProfile('Notch');
+console.log(profile);
+// {
+//   id: "069a79f444e94726a5befca90e38aaf5",
+//   name: "Notch",
+//   properties: [...]
+// }
+```
+
+[View Mojang API →](/api/minecraft/mojang)
+
+### Server Status
+
+Check Minecraft server status:
+
+```typescript
+import { getServerStatus, isServerOnline, getServerIcon } from '@magicyan/minecraft';
+
+// Check if server is online
+const online = await isServerOnline('mc.hypixel.net');
+console.log(online); // true or false
+
+// Get full server status
+const status = await getServerStatus('mc.hypixel.net');
+console.log(status);
+// {
+//   online: true,
+//   version: "1.8.x - 1.20.x",
+//   players: { online: 45000, max: 100000 },
+//   motd: "Hypixel Network",
+//   icon: "data:image/png;base64,..."
+// }
+
+// Get server icon as base64
+const icon = await getServerIcon('mc.hypixel.net');
+```
+
+[View Server API →](/api/minecraft/server)
+
+### Player Skins
+
+Render player skins in various poses:
+
+```typescript
+import { getSkinRender } from '@magicyan/minecraft';
+
+// Get skin render URL
+const skinUrl = getSkinRender('Notch', {
+  type: 'full', // or 'face', 'front', 'head', etc.
+  size: 512,
+});
+
+// Use in Discord embed
+const embed = new EmbedBuilder()
+  .setTitle('Player Skin')
+  .setImage(skinUrl);
+```
+
+Available render types:
+- `face` - Face only
+- `head` - Head with helm
+- `front` - Front view
+- `full` - Full body
+- `bust` - Upper body
+- `skin` - Raw skin texture
+
+[View Skins API →](/api/minecraft/skins)
+
+## Usage Examples
+
+### Player Info Command
+
+```typescript
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { getProfile, getSkinRender } from '@magicyan/minecraft';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('mcplayer')
+    .setDescription('Get Minecraft player info')
+    .addStringOption(opt =>
+      opt.setName('username')
+        .setDescription('Minecraft username')
+        .setRequired(true)
+    ),
+  
+  async execute(interaction) {
+    await interaction.deferReply();
+
+    const username = interaction.options.getString('username', true);
+
+    try {
+      const profile = await getProfile(username);
+      const skinUrl = getSkinRender(username, {
+        type: 'full',
+        size: 512,
+      });
+
+      const embed = new EmbedBuilder()
+        .setTitle(`Minecraft Player: ${profile.name}`)
+        .setDescription(`UUID: \`${profile.id}\``)
+        .setThumbnail(skinUrl)
+        .setColor('#00AA00')
+        .setTimestamp();
+
+      await interaction.editReply({ embeds: [embed] });
+    } catch (error) {
+      await interaction.editReply('Player not found!');
+    }
+  }
+};
+```
+
+### Server Status Command
+
+```typescript
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { getServerStatus } from '@magicyan/minecraft';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('mcserver')
+    .setDescription('Check Minecraft server status')
+    .addStringOption(opt =>
+      opt.setName('address')
+        .setDescription('Server address')
+        .setRequired(true)
+    ),
+  
+  async execute(interaction) {
+    await interaction.deferReply();
+
+    const address = interaction.options.getString('address', true);
+
+    try {
+      const status = await getServerStatus(address);
+
+      const embed = new EmbedBuilder()
+        .setTitle(`Server: ${address}`)
+        .addFields(
+          { 
+            name: 'Status', 
+            value: status.online ? '🟢 Online' : '🔴 Offline',
+            inline: true 
+          },
+          { 
+            name: 'Version', 
+            value: status.version || 'Unknown',
+            inline: true 
+          },
+          { 
+            name: 'Players', 
+            value: `${status.players.online}/${status.players.max}`,
+            inline: true 
+          }
+        )
+        .setDescription(status.motd || 'No description')
+        .setColor(status.online ? '#00AA00' : '#AA0000')
+        .setTimestamp();
+
+      if (status.icon) {
+        // Icon is base64 encoded
+        const buffer = Buffer.from(status.icon.split(',')[1], 'base64');
+        const attachment = new AttachmentBuilder(buffer, { name: 'icon.png' });
+        embed.setThumbnail('attachment://icon.png');
+        await interaction.editReply({ embeds: [embed], files: [attachment] });
+      } else {
+        await interaction.editReply({ embeds: [embed] });
+      }
+    } catch (error) {
+      await interaction.editReply('Failed to fetch server status!');
+    }
+  }
+};
+```
+
+### Skin Comparison
+
+```typescript
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { getSkinRender } from '@magicyan/minecraft';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('compareskins')
+    .setDescription('Compare two player skins')
+    .addStringOption(opt =>
+      opt.setName('player1')
+        .setDescription('First player')
+        .setRequired(true)
+    )
+    .addStringOption(opt =>
+      opt.setName('player2')
+        .setDescription('Second player')
+        .setRequired(true)
+    ),
+  
+  async execute(interaction) {
+    await interaction.deferReply();
+
+    const player1 = interaction.options.getString('player1', true);
+    const player2 = interaction.options.getString('player2', true);
+
+    const skin1 = getSkinRender(player1, { type: 'full', size: 512 });
+    const skin2 = getSkinRender(player2, { type: 'full', size: 512 });
+
+    const embed = new EmbedBuilder()
+      .setTitle('Skin Comparison')
+      .setDescription(`${player1} vs ${player2}`)
+      .addFields(
+        { name: player1, value: `[View Skin](${skin1})`, inline: true },
+        { name: player2, value: `[View Skin](${skin2})`, inline: true }
+      )
+      .setImage(skin1)
+      .setThumbnail(skin2)
+      .setColor('#00AA00');
+
+    await interaction.editReply({ embeds: [embed] });
+  }
+};
+```
+
+## API Constants
+
+The package exports API endpoint constants:
+
+```typescript
+import { MOJANG_API, MINECRAFT_API } from '@magicyan/minecraft';
+
+console.log(MOJANG_API); // Mojang API base URL
+console.log(MINECRAFT_API); // Minecraft services API URL
+```
+
+## Error Handling
+
+All API functions can throw errors. Always handle them:
+
+```typescript
+try {
+  const profile = await getProfile('InvalidUsername123');
+} catch (error) {
+  if (error.message.includes('404')) {
+    console.log('Player not found');
+  } else {
+    console.error('API error:', error);
+  }
+}
+```
+
+## Rate Limiting
+
+<Warning>
+  Mojang and Minecraft APIs have rate limits. Consider implementing caching for frequently requested data:
+  
+  ```typescript
+  const cache = new Map();
+  
+  async function getCachedProfile(username) {
+    if (cache.has(username)) {
+      return cache.get(username);
+    }
+    
+    const profile = await getProfile(username);
+    cache.set(username, profile);
+    
+    // Clear cache after 1 hour
+    setTimeout(() => cache.delete(username), 3600000);
+    
+    return profile;
+  }
+  ```
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Mojang API" icon="user" href="/api/minecraft/mojang">
+    Player profiles and UUIDs
+  </Card>
+  <Card title="Server API" icon="server" href="/api/minecraft/server">
+    Server status and information
+  </Card>
+  <Card title="Skins API" icon="image" href="/api/minecraft/skins">
+    Player skin rendering
+  </Card>
+  <Card title="Discord Package" icon="discord" href="/packages/discord">
+    Combine with Discord helpers
+  </Card>
+</CardGroup>

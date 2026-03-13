@@ -1,0 +1,130 @@
+---
+title: Channel Events
+description: Extended events for channel management with executor information
+---
+
+## extendedChannelDelete
+
+Emitted when a channel is deleted, providing information about who deleted it.
+
+```typescript
+client.on("extendedChannelDelete", (channel, executor) => {
+  console.log(`${executor.user.tag} deleted channel #${channel.name}`);
+});
+```
+
+### Parameters
+
+<ParamField path="channel" type="NonThreadGuildBasedChannel" required>
+  The channel that was deleted. This can be any guild channel type except threads (text, voice, announcement, stage, forum, category).
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The member who deleted the channel.
+</ParamField>
+
+### Use cases
+
+- Log channel deletions in audit channels
+- Track channel management activity
+- Implement channel deletion notifications
+- Monitor important channel removals
+- Archive channel data before deletion
+
+```typescript
+client.on("extendedChannelDelete", (channel, executor) => {
+  const auditChannel = channel.guild.channels.cache.get("AUDIT_CHANNEL_ID");
+  
+  if (auditChannel?.isTextBased()) {
+    const channelType = channel.type === 0 ? "Text" :
+                       channel.type === 2 ? "Voice" :
+                       channel.type === 4 ? "Category" :
+                       channel.type === 5 ? "Announcement" :
+                       channel.type === 13 ? "Stage" :
+                       channel.type === 15 ? "Forum" : "Unknown";
+    
+    auditChannel.send({
+      embeds: [{
+        title: "Channel Deleted",
+        fields: [
+          { name: "Channel", value: `${channel.name} (${channel.id})`, inline: true },
+          { name: "Type", value: channelType, inline: true },
+          { name: "Deleted by", value: executor.user.tag, inline: true }
+        ],
+        color: 0xFF0000,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+### Advanced example: Archive channel messages
+
+```typescript
+import { TextChannel } from "discord.js";
+import fs from "fs/promises";
+
+client.on("extendedChannelDelete", async (channel, executor) => {
+  // Only archive text channels
+  if (!(channel instanceof TextChannel)) return;
+  
+  try {
+    // Fetch the last 100 messages before deletion
+    const messages = await channel.messages.fetch({ limit: 100 });
+    
+    const archive = {
+      channelName: channel.name,
+      channelId: channel.id,
+      deletedBy: executor.user.tag,
+      deletedAt: new Date().toISOString(),
+      messages: messages.map(msg => ({
+        author: msg.author.tag,
+        content: msg.content,
+        timestamp: msg.createdAt.toISOString(),
+        attachments: msg.attachments.map(att => att.url)
+      }))
+    };
+    
+    // Save to file
+    await fs.writeFile(
+      `./archives/${channel.id}.json`,
+      JSON.stringify(archive, null, 2)
+    );
+    
+    console.log(`Archived ${messages.size} messages from #${channel.name}`);
+  } catch (error) {
+    console.error("Failed to archive channel:", error);
+  }
+});
+```
+
+### Channel type reference
+
+<Note>
+  The channel parameter can be any of the following types:
+  - **Text Channel** (type 0) - Standard text channel
+  - **Voice Channel** (type 2) - Voice channel
+  - **Category** (type 4) - Channel category/folder
+  - **Announcement Channel** (type 5) - Announcement/news channel
+  - **Stage Channel** (type 13) - Stage voice channel
+  - **Forum Channel** (type 15) - Forum channel
+</Note>
+
+<Warning>
+  This event requires your bot to have:
+  - The `Guilds` intent enabled
+  - The `ViewAuditLog` permission in the guild
+  
+  DM channels are automatically filtered out and will not trigger this event.
+</Warning>
+
+## guildChannelDelete
+
+Alias for `extendedChannelDelete`. Both event names can be used interchangeably.
+
+```typescript
+// These are equivalent
+client.on("extendedChannelDelete", (channel, executor) => { });
+client.on("guildChannelDelete", (channel, executor) => { });
+```

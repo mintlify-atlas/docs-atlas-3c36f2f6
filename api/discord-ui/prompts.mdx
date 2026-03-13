@@ -1,0 +1,292 @@
+---
+title: Prompts
+description: Interactive confirmation prompts for Discord.js
+---
+
+The prompts module provides interactive confirmation dialogs for Discord bots.
+
+## Confirm Prompt
+
+Create a simple confirmation dialog with confirm and cancel buttons.
+
+### confirm
+
+```typescript
+function confirm(options: ConfirmPromptOptions): Promise<void>
+```
+
+Creates a confirmation prompt with customizable buttons.
+
+<ParamField path="options" type="ConfirmPromptOptions" required>
+  Configuration for the confirmation prompt
+  
+  <Expandable title="properties">
+    <ParamField path="render" type="function" required>
+      Function that renders the initial message
+      ```typescript
+      (components: ActionRowBuilder<ButtonBuilder>[]) => PromiseLike<Message>
+      ```
+    </ParamField>
+    
+    <ParamField path="onClick" type="function" required>
+      Callback when a button is clicked
+      ```typescript
+      (interaction: ButtonInteraction, isCancel: boolean) => void
+      ```
+      The `isCancel` parameter is `true` when the cancel button is clicked, `false` for confirm.
+    </ParamField>
+    
+    <ParamField path="buttons" type="CustomizeConfirmPromptButtons">
+      Custom button configurations
+    </ParamField>
+    
+    <ParamField path="components" type="function">
+      Custom component layout function
+      ```typescript
+      (buttons: ConfirmPromptButtons) => ActionRowBuilder<ButtonBuilder>[]
+      ```
+    </ParamField>
+    
+    <ParamField path="filter" type="function">
+      Filter function for button interactions
+      ```typescript
+      (interaction: ButtonInteraction) => boolean
+      ```
+    </ParamField>
+    
+    <ParamField path="time" type="number">
+      Timeout duration in milliseconds
+    </ParamField>
+    
+    <ParamField path="onTimeout" type="function">
+      Callback when the collector times out
+      ```typescript
+      () => void
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+#### Example
+
+<CodeGroup>
+```typescript Basic Confirmation
+import { confirm } from "@magicyan/discord-ui";
+import { EmbedBuilder } from "discord.js";
+
+const embed = new EmbedBuilder()
+  .setTitle("Delete Account?")
+  .setDescription("Are you sure you want to delete your account? This action cannot be undone.")
+  .setColor("Red");
+
+await confirm({
+  render: (components) => {
+    return interaction.reply({ embeds: [embed], components, fetchReply: true });
+  },
+  onClick: async (interaction, isCancel) => {
+    if (isCancel) {
+      await interaction.update({ content: "Cancelled.", embeds: [], components: [] });
+      return;
+    }
+    await interaction.update({ content: "Account deleted.", embeds: [], components: [] });
+    // Perform deletion logic
+  },
+  filter: (i) => i.user.id === interaction.user.id,
+});
+```
+
+```typescript Custom Buttons
+import { confirm } from "@magicyan/discord-ui";
+import { ButtonStyle } from "discord.js";
+
+await confirm({
+  buttons: {
+    confirm: { label: "Yes, I'm sure", style: ButtonStyle.Danger },
+    cancel: { label: "No, go back", style: ButtonStyle.Secondary },
+  },
+  render: (components) => {
+    return message.edit({ 
+      content: "Do you want to proceed?", 
+      components 
+    });
+  },
+  onClick: (interaction, isCancel) => {
+    if (!isCancel) {
+      interaction.reply({ content: "Confirmed!", ephemeral: true });
+    } else {
+      interaction.reply({ content: "Cancelled.", ephemeral: true });
+    }
+  },
+});
+```
+
+```typescript With Timeout
+import { confirm } from "@magicyan/discord-ui";
+
+await confirm({
+  render: (components) => {
+    return interaction.reply({
+      content: "Proceed with this action?",
+      components,
+      fetchReply: true,
+    });
+  },
+  onClick: async (interaction, isCancel) => {
+    if (isCancel) {
+      await interaction.update({ content: "Action cancelled.", components: [] });
+    } else {
+      await interaction.update({ content: "Processing...", components: [] });
+      // Perform action
+    }
+  },
+  time: 30000,
+  onTimeout: () => {
+    interaction.editReply({ content: "Confirmation timed out.", components: [] });
+  },
+  filter: (i) => i.user.id === interaction.user.id,
+});
+```
+
+```typescript Custom Component Layout
+import { confirm } from "@magicyan/discord-ui";
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder } from "discord.js";
+
+const warningEmbed = new EmbedBuilder()
+  .setTitle("⚠️ Warning")
+  .setDescription("This will kick all members from the server!")
+  .setColor("Orange");
+
+await confirm({
+  render: (components) => {
+    return interaction.reply({ embeds: [warningEmbed], components, fetchReply: true });
+  },
+  components: (buttons) => {
+    // Custom layout with buttons in separate rows
+    return [
+      new ActionRowBuilder({ components: [buttons.confirm] }),
+      new ActionRowBuilder({ components: [buttons.cancel] }),
+    ];
+  },
+  onClick: async (interaction, isCancel) => {
+    if (!isCancel) {
+      await interaction.update({ content: "Kicking all members...", embeds: [], components: [] });
+      // Perform kick logic
+    } else {
+      await interaction.update({ content: "Action cancelled.", embeds: [], components: [] });
+    }
+  },
+});
+```
+</CodeGroup>
+
+### customizeConfirmPrompt
+
+```typescript
+function customizeConfirmPrompt(
+  customizedButtons: CustomizeConfirmPromptButtons,
+  buttons?: ConfirmPromptButtons
+): void
+```
+
+Customizes the default confirmation prompt buttons globally.
+
+<ParamField path="customizedButtons" type="CustomizeConfirmPromptButtons" required>
+  Button customizations
+  
+  <Expandable title="properties">
+    <ParamField path="confirm" type="Partial<InteractionButtonComponentData>">
+      Customize the confirm button (label, style, emoji)
+      
+      Cannot modify: `disabled`, `customId`, `type`
+    </ParamField>
+    <ParamField path="cancel" type="Partial<InteractionButtonComponentData>">
+      Customize the cancel button (label, style, emoji)
+      
+      Cannot modify: `disabled`, `customId`, `type`
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="buttons" type="ConfirmPromptButtons">
+  Optional buttons object to customize (defaults to global buttons)
+</ParamField>
+
+#### Example
+
+```typescript
+import { customizeConfirmPrompt } from "@magicyan/discord-ui";
+import { ButtonStyle } from "discord.js";
+
+// Customize buttons globally for all confirm prompts
+customizeConfirmPrompt({
+  confirm: { label: "Accept", emoji: "✅", style: ButtonStyle.Success },
+  cancel: { label: "Decline", emoji: "❌", style: ButtonStyle.Danger },
+});
+```
+
+---
+
+## Types
+
+### ConfirmPromptButtons
+
+```typescript
+type ConfirmPromptButtons = Record<"confirm" | "cancel", InteractionButtonComponentData>;
+```
+
+Default button configuration:
+- **confirm**: Green button with checkmark (✔)
+- **cancel**: Red button with cross (✖)
+
+### CustomizeConfirmPromptButtons
+
+```typescript
+interface CustomizeConfirmPromptButtons {
+  confirm?: Partial<Omit<InteractionButtonComponentData, "disabled" | "customId" | "type">>;
+  cancel?: Partial<Omit<InteractionButtonComponentData, "disabled" | "customId" | "type">>;
+}
+```
+
+Allows customization of button appearance while preserving internal functionality.
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always use filters">
+    Use the `filter` option to ensure only the intended user can interact with the prompt:
+    ```typescript
+    filter: (i) => i.user.id === interaction.user.id
+    ```
+  </Accordion>
+  
+  <Accordion title="Set reasonable timeouts">
+    Set a `time` limit and handle `onTimeout` to clean up expired prompts:
+    ```typescript
+    time: 60000, // 1 minute
+    onTimeout: () => {
+      interaction.editReply({ components: [] });
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Clear components after interaction">
+    Always remove components after a choice is made:
+    ```typescript
+    onClick: async (interaction, isCancel) => {
+      await interaction.update({ components: [] });
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Provide clear context">
+    Use embeds or descriptive messages to explain what the user is confirming:
+    ```typescript
+    const embed = new EmbedBuilder()
+      .setTitle("Confirmation Required")
+      .setDescription("Clear description of the action")
+      .setColor("Orange");
+    ```
+  </Accordion>
+</AccordionGroup>

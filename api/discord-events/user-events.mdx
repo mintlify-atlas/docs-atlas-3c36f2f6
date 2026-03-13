@@ -1,0 +1,252 @@
+---
+title: User Events
+description: Extended events for user moderation actions with executor information
+---
+
+## userBanAdd
+
+Emitted when a user is banned from a guild.
+
+```typescript
+client.on("userBanAdd", (user, executor, reason, guild) => {
+  console.log(`${user.tag} was banned from ${guild.name} by ${executor.user.tag}`);
+  if (reason) {
+    console.log(`Reason: ${reason}`);
+  }
+});
+```
+
+### Parameters
+
+<ParamField path="user" type="User" required>
+  The user who was banned.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The moderator who executed the ban.
+</ParamField>
+
+<ParamField path="reason" type="string | null" required>
+  The reason for the ban, or `null` if no reason was provided.
+</ParamField>
+
+<ParamField path="guild" type="Guild" required>
+  The guild where the ban occurred.
+</ParamField>
+
+### Use cases
+
+- Log ban actions in moderation channels
+- Send notifications to other servers
+- Track moderation patterns
+- Implement ban appeal systems
+- Sync bans across multiple servers
+
+```typescript
+client.on("userBanAdd", (user, executor, reason, guild) => {
+  const modLog = guild.channels.cache.get("MOD_LOG_CHANNEL_ID");
+  
+  if (modLog?.isTextBased()) {
+    modLog.send({
+      embeds: [{
+        title: "User Banned",
+        thumbnail: { url: user.displayAvatarURL() },
+        fields: [
+          { name: "User", value: `${user.tag} (${user.id})`, inline: true },
+          { name: "Moderator", value: executor.user.tag, inline: true },
+          { name: "Reason", value: reason || "No reason provided" }
+        ],
+        color: 0xFF0000,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+---
+
+## userBanRemove
+
+Emitted when a user is unbanned from a guild.
+
+```typescript
+client.on("userBanRemove", (user, executor, guild) => {
+  console.log(`${user.tag} was unbanned from ${guild.name} by ${executor.user.tag}`);
+});
+```
+
+### Parameters
+
+<ParamField path="user" type="User" required>
+  The user who was unbanned.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The moderator who removed the ban.
+</ParamField>
+
+<ParamField path="guild" type="Guild" required>
+  The guild where the unban occurred.
+</ParamField>
+
+### Use cases
+
+- Log unban actions in moderation channels
+- Send welcome back messages
+- Track successful appeals
+- Notify administrators of unbans
+
+```typescript
+client.on("userBanRemove", (user, executor, guild) => {
+  const modLog = guild.channels.cache.get("MOD_LOG_CHANNEL_ID");
+  
+  if (modLog?.isTextBased()) {
+    modLog.send({
+      embeds: [{
+        title: "User Unbanned",
+        thumbnail: { url: user.displayAvatarURL() },
+        fields: [
+          { name: "User", value: `${user.tag} (${user.id})`, inline: true },
+          { name: "Moderator", value: executor.user.tag, inline: true }
+        ],
+        color: 0x00FF00,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+---
+
+## userKick
+
+Emitted when a user is kicked from a guild.
+
+```typescript
+client.on("userKick", (user, executor, reason, guild) => {
+  console.log(`${user.tag} was kicked from ${guild.name} by ${executor.user.tag}`);
+  if (reason) {
+    console.log(`Reason: ${reason}`);
+  }
+});
+```
+
+### Parameters
+
+<ParamField path="user" type="User" required>
+  The user who was kicked.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The moderator who executed the kick.
+</ParamField>
+
+<ParamField path="reason" type="string | null" required>
+  The reason for the kick, or `null` if no reason was provided.
+</ParamField>
+
+<ParamField path="guild" type="Guild" required>
+  The guild where the kick occurred.
+</ParamField>
+
+### Use cases
+
+- Log kick actions in moderation channels
+- Track moderation activity
+- Implement kick counters
+- Send DMs to kicked users with appeal information
+
+```typescript
+client.on("userKick", async (user, executor, reason, guild) => {
+  const modLog = guild.channels.cache.get("MOD_LOG_CHANNEL_ID");
+  
+  if (modLog?.isTextBased()) {
+    modLog.send({
+      embeds: [{
+        title: "User Kicked",
+        thumbnail: { url: user.displayAvatarURL() },
+        fields: [
+          { name: "User", value: `${user.tag} (${user.id})`, inline: true },
+          { name: "Moderator", value: executor.user.tag, inline: true },
+          { name: "Reason", value: reason || "No reason provided" }
+        ],
+        color: 0xFFA500,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+  
+  // Try to DM the user
+  try {
+    await user.send({
+      embeds: [{
+        title: `You were kicked from ${guild.name}`,
+        description: reason ? `Reason: ${reason}` : "No reason was provided.",
+        fields: [
+          { name: "Appeal", value: "If you believe this was a mistake, please contact the server administrators." }
+        ],
+        color: 0xFFA500
+      }]
+    });
+  } catch (error) {
+    console.log(`Could not DM ${user.tag} about their kick`);
+  }
+});
+```
+
+### Advanced example: Moderation tracking
+
+```typescript
+const moderationActions = new Map<string, number>();
+
+// Track all moderation actions
+function trackModeration(userId: string, action: string) {
+  const key = `${userId}-${action}`;
+  const count = moderationActions.get(key) || 0;
+  moderationActions.set(key, count + 1);
+}
+
+client.on("userKick", (user, executor, reason, guild) => {
+  trackModeration(user.id, "kick");
+  
+  const kickCount = moderationActions.get(`${user.id}-kick`) || 0;
+  
+  if (kickCount >= 3) {
+    const modLog = guild.channels.cache.get("MOD_LOG_CHANNEL_ID");
+    if (modLog?.isTextBased()) {
+      modLog.send({
+        content: `⚠️ ${user.tag} has been kicked ${kickCount} times. Consider a ban?`,
+        embeds: [{
+          title: "Repeated Offender Alert",
+          fields: [
+            { name: "User", value: user.tag },
+            { name: "Kick Count", value: kickCount.toString() },
+            { name: "Latest Reason", value: reason || "No reason" }
+          ],
+          color: 0xFF0000
+        }]
+      });
+    }
+  }
+});
+
+client.on("userBanAdd", (user, executor, reason, guild) => {
+  trackModeration(user.id, "ban");
+});
+```
+
+<Warning>
+  These events require:
+  - The `GuildModeration` intent to be enabled in your Discord application
+  - The `ViewAuditLog` permission for your bot in the guild
+  
+  Without these, the events will not fire.
+</Warning>
+
+<Note>
+  The difference between `user` and `executor`:
+  - **user** - The person who received the moderation action (User object)
+  - **executor** - The moderator who performed the action (GuildMember object)
+</Note>

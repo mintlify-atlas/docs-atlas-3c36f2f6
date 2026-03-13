@@ -1,0 +1,404 @@
+---
+title: Menus
+description: Interactive pagination and multi-menu components for Discord.js
+---
+
+The `@magicyan/discord-ui` package provides powerful menu systems for creating paginated embeds and multi-item selection interfaces.
+
+## Pagination Menu
+
+Create an interactive paginated menu with navigation buttons.
+
+### pagination
+
+```typescript
+function pagination(options: PaginationMenuOptions): Promise<void>
+```
+
+Creates a paginated menu with customizable buttons and embed navigation.
+
+<ParamField path="options" type="PaginationMenuOptions" required>
+  Configuration for the pagination menu
+  
+  <Expandable title="properties">
+    <ParamField path="embeds" type="EmbedBuilder[]" required>
+      Array of embeds to paginate through
+    </ParamField>
+    
+    <ParamField path="render" type="function" required>
+      Function that renders the initial message
+      ```typescript
+      (embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder>[]) => PromiseLike<Message>
+      ```
+    </ParamField>
+    
+    <ParamField path="buttons" type="CustomizePaginationMenuButtons">
+      Custom button configurations
+    </ParamField>
+    
+    <ParamField path="components" type="function">
+      Custom component layout function
+      ```typescript
+      (buttons: PaginationMenuButtons) => ActionRowBuilder<ButtonBuilder>[]
+      ```
+    </ParamField>
+    
+    <ParamField path="onClick" type="function">
+      Callback when action button is clicked
+      ```typescript
+      (interaction: ButtonInteraction, embed: EmbedBuilder) => void
+      ```
+    </ParamField>
+    
+    <ParamField path="onClose" type="function">
+      Callback when close button is clicked
+      ```typescript
+      (interaction: ButtonInteraction) => void
+      ```
+    </ParamField>
+    
+    <ParamField path="filter" type="function">
+      Filter function for button interactions
+      ```typescript
+      (interaction: ButtonInteraction) => boolean
+      ```
+    </ParamField>
+    
+    <ParamField path="time" type="number">
+      Timeout duration in milliseconds
+    </ParamField>
+    
+    <ParamField path="onTimeout" type="function">
+      Callback when the collector times out
+      ```typescript
+      () => void
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+#### Example
+
+<CodeGroup>
+```typescript Basic Usage
+import { pagination } from "@magicyan/discord-ui";
+import { EmbedBuilder } from "discord.js";
+
+const embeds = [
+  new EmbedBuilder().setTitle("Page 1").setDescription("First page"),
+  new EmbedBuilder().setTitle("Page 2").setDescription("Second page"),
+  new EmbedBuilder().setTitle("Page 3").setDescription("Third page"),
+];
+
+await pagination({
+  embeds,
+  render: (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  filter: (i) => i.user.id === interaction.user.id,
+  time: 60000,
+});
+```
+
+```typescript Custom Buttons
+import { pagination } from "@magicyan/discord-ui";
+import { EmbedBuilder, ButtonStyle } from "discord.js";
+
+await pagination({
+  embeds: myEmbeds,
+  buttons: {
+    next: { label: "Next Page", style: ButtonStyle.Success },
+    previous: { label: "Previous", style: ButtonStyle.Secondary },
+    close: { label: "Done", emoji: "✅" },
+  },
+  render: (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  onClick: (interaction, embed) => {
+    interaction.reply({ content: `You clicked on ${embed.data.title}`, ephemeral: true });
+  },
+});
+```
+
+```typescript With Timeout
+import { pagination } from "@magicyan/discord-ui";
+
+await pagination({
+  embeds: pages,
+  render: (embeds, components) => {
+    return message.edit({ embeds, components });
+  },
+  time: 30000,
+  onTimeout: () => {
+    message.edit({ components: [] });
+  },
+  onClose: (interaction) => {
+    interaction.update({ components: [] });
+  },
+});
+```
+</CodeGroup>
+
+### customizePaginationMenu
+
+```typescript
+function customizePaginationMenu(
+  customizedButtons: CustomizePaginationMenuButtons,
+  buttons?: PaginationMenuButtons
+): void
+```
+
+Customizes the default pagination menu buttons globally.
+
+<ParamField path="customizedButtons" type="CustomizePaginationMenuButtons" required>
+  Button customizations
+  
+  <Expandable title="properties">
+    <ParamField path="next" type="Partial<InteractionButtonComponentData>">
+      Customize the next button (label, style, emoji)
+    </ParamField>
+    <ParamField path="previous" type="Partial<InteractionButtonComponentData>">
+      Customize the previous button
+    </ParamField>
+    <ParamField path="home" type="Partial<InteractionButtonComponentData>">
+      Customize the home button
+    </ParamField>
+    <ParamField path="close" type="Partial<InteractionButtonComponentData>">
+      Customize the close button
+    </ParamField>
+    <ParamField path="action" type="Partial<InteractionButtonComponentData>">
+      Customize the action button
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="buttons" type="PaginationMenuButtons">
+  Optional buttons object to customize (defaults to global buttons)
+</ParamField>
+
+---
+
+## Multi-Menu
+
+Create an interactive menu with select menu support and multiple view types.
+
+### multimenu
+
+```typescript
+function multimenu(options: MultimenuMenuOptions): Promise<void>
+```
+
+Creates a multi-item menu with select menu integration and dynamic view types.
+
+<ParamField path="options" type="MultimenuMenuOptions" required>
+  Configuration for the multi-menu
+  
+  <Expandable title="properties">
+    <ParamField path="items" type="MultimenuItem[]" required>
+      Array of items to display in the menu
+    </ParamField>
+    
+    <ParamField path="render" type="function" required>
+      Function that renders the initial message
+      ```typescript
+      (embeds: EmbedBuilder[], components: Components) => PromiseLike<Message>
+      ```
+    </ParamField>
+    
+    <ParamField path="embed" type="EmbedBuilder">
+      Base embed to use for the menu
+    </ParamField>
+    
+    <ParamField path="buttons" type="CustomizeMultimenuMenuButtons">
+      Custom button configurations
+    </ParamField>
+    
+    <ParamField path="placeholder" type="string">
+      Placeholder text for the select menu
+    </ParamField>
+    
+    <ParamField path="viewType" type="'list' | 'items' | 'grid' | 'blocks'">
+      Display style for items
+    </ParamField>
+    
+    <ParamField path="itemsPerPage" type="2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10">
+      Number of items per page (default: 10)
+    </ParamField>
+    
+    <ParamField path="components" type="function">
+      Custom component layout function
+      ```typescript
+      (buttons: MultimenuMenuButtons, selectMenu: StringSelectMenuBuilder) => Components
+      ```
+    </ParamField>
+    
+    <ParamField path="onSelect" type="function">
+      Callback when an item is selected
+      ```typescript
+      (interaction: StringSelectMenuInteraction, item: MultimenuItem) => void
+      ```
+    </ParamField>
+    
+    <ParamField path="onClose" type="function">
+      Callback when close button is clicked
+      ```typescript
+      (interaction: ButtonInteraction) => void
+      ```
+    </ParamField>
+    
+    <ParamField path="filter" type="function">
+      Filter function for interactions
+      ```typescript
+      (interaction: MessageComponentInteraction) => boolean
+      ```
+    </ParamField>
+    
+    <ParamField path="time" type="number">
+      Timeout duration in milliseconds
+    </ParamField>
+    
+    <ParamField path="onTimeout" type="function">
+      Callback when the collector times out
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+#### MultimenuItem Interface
+
+```typescript
+interface MultimenuItem {
+  title?: string;
+  description: string;
+  color?: string | ColorResolvable;
+  thumbnail?: string;
+  option?: SelectMenuComponentOptionData;
+}
+```
+
+#### Example
+
+<CodeGroup>
+```typescript Basic Multi-Menu
+import { multimenu } from "@magicyan/discord-ui";
+
+const items = [
+  {
+    title: "Option 1",
+    description: "First option description",
+    color: "#ff0000",
+    option: { label: "Select 1", value: "opt1" },
+  },
+  {
+    title: "Option 2",
+    description: "Second option description",
+    color: "#00ff00",
+    option: { label: "Select 2", value: "opt2" },
+  },
+];
+
+await multimenu({
+  items,
+  render: (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  onSelect: (interaction, item) => {
+    interaction.reply({ content: `You selected: ${item.title}`, ephemeral: true });
+  },
+});
+```
+
+```typescript With View Types
+import { multimenu } from "@magicyan/discord-ui";
+import { EmbedBuilder } from "discord.js";
+
+await multimenu({
+  embed: new EmbedBuilder().setTitle("Choose an item"),
+  items: myItems,
+  viewType: "grid",
+  itemsPerPage: 6,
+  placeholder: "Select an option...",
+  render: (embeds, components) => {
+    return message.edit({ embeds, components });
+  },
+  filter: (i) => i.user.id === interaction.user.id,
+});
+```
+
+```typescript Blocks View
+import { multimenu } from "@magicyan/discord-ui";
+
+const servers = [
+  {
+    title: "Creative Server",
+    description: "Build amazing creations",
+    thumbnail: "https://example.com/creative.png",
+    color: "#ffaa00",
+    option: { label: "Join Creative", value: "creative" },
+  },
+  {
+    title: "Survival Server",
+    description: "Test your survival skills",
+    thumbnail: "https://example.com/survival.png",
+    color: "#00aaff",
+    option: { label: "Join Survival", value: "survival" },
+  },
+];
+
+await multimenu({
+  items: servers,
+  viewType: "blocks",
+  render: (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  onSelect: async (interaction, item) => {
+    await interaction.reply({ content: `Joining ${item.title}...`, ephemeral: true });
+  },
+});
+```
+</CodeGroup>
+
+### customizeMultimenuMenuButtons
+
+```typescript
+function customizeMultimenuMenuButtons(
+  customizedButtons: CustomizeMultimenuMenuButtons,
+  buttons?: MultimenuMenuButtons
+): void
+```
+
+Customizes the default multi-menu buttons globally.
+
+### customizeMultimenuMenuOptions
+
+```typescript
+function customizeMultimenuMenuOptions(
+  customizedOptions: CustomizeMultimenuMenuOptions,
+  options?: Required<CustomizeMultimenuMenuOptions>
+): void
+```
+
+Customizes the default multi-menu options globally.
+
+<ParamField path="customizedOptions" type="CustomizeMultimenuMenuOptions" required>
+  <Expandable title="properties">
+    <ParamField path="placeholder" type="string">
+      Default placeholder for select menus
+    </ParamField>
+    <ParamField path="viewType" type="MultiMenuViewType">
+      Default view type: `"list"` | `"items"` | `"grid"` | `"blocks"`
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+---
+
+## View Types
+
+The multi-menu supports four different view types:
+
+- **list**: Vertical list with full-width fields
+- **items**: 2-column grid layout
+- **grid**: 3-column grid layout
+- **blocks**: Separate embeds for each item with thumbnails
+
+Users can toggle between view types using the view button (eye emoji by default).

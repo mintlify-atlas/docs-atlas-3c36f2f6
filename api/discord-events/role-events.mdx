@@ -1,0 +1,198 @@
+---
+title: Role Events
+description: Extended events for role management with executor information
+---
+
+## extendedRoleCreate
+
+Emitted when a role is created, providing information about who created it.
+
+```typescript
+client.on("extendedRoleCreate", (role, executor) => {
+  console.log(`${executor.user.tag} created role ${role.name}`);
+});
+```
+
+### Parameters
+
+<ParamField path="role" type="Role" required>
+  The role that was created.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The member who created the role.
+</ParamField>
+
+### Use cases
+
+- Log role creation in audit channels
+- Track role management activity
+- Implement role creation notifications
+- Monitor permission changes
+
+```typescript
+client.on("extendedRoleCreate", (role, executor) => {
+  const auditChannel = role.guild.channels.cache.get("AUDIT_CHANNEL_ID");
+  
+  if (auditChannel?.isTextBased()) {
+    auditChannel.send({
+      embeds: [{
+        title: "Role Created",
+        fields: [
+          { name: "Role", value: `${role.name} (${role.id})`, inline: true },
+          { name: "Created by", value: executor.user.tag, inline: true },
+          { name: "Color", value: role.hexColor, inline: true },
+          { name: "Hoisted", value: role.hoist ? "Yes" : "No", inline: true },
+          { name: "Mentionable", value: role.mentionable ? "Yes" : "No", inline: true }
+        ],
+        color: role.color,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+---
+
+## extendedRoleDelete
+
+Emitted when a role is deleted, providing information about who deleted it.
+
+```typescript
+client.on("extendedRoleDelete", (role, executor) => {
+  console.log(`${executor.user.tag} deleted role ${role.name}`);
+});
+```
+
+### Parameters
+
+<ParamField path="role" type="Role" required>
+  The role that was deleted.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The member who deleted the role.
+</ParamField>
+
+### Use cases
+
+- Log role deletions in audit channels
+- Track role management activity
+- Implement role deletion notifications
+- Monitor important role removals
+
+```typescript
+client.on("extendedRoleDelete", (role, executor) => {
+  const auditChannel = role.guild.channels.cache.get("AUDIT_CHANNEL_ID");
+  
+  if (auditChannel?.isTextBased()) {
+    auditChannel.send({
+      embeds: [{
+        title: "Role Deleted",
+        fields: [
+          { name: "Role", value: `${role.name} (${role.id})`, inline: true },
+          { name: "Deleted by", value: executor.user.tag, inline: true },
+          { name: "Member count", value: role.members.size.toString(), inline: true }
+        ],
+        color: 0xFF0000,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+<Note>
+  The role object is still available when this event fires, allowing you to access its properties before it's completely removed.
+</Note>
+
+---
+
+## extendedRoleUpdate
+
+Emitted when a role is updated, providing information about who updated it.
+
+```typescript
+client.on("extendedRoleUpdate", (oldRole, newRole, executor) => {
+  console.log(`${executor.user.tag} updated role ${newRole.name}`);
+  
+  if (oldRole.name !== newRole.name) {
+    console.log(`Name changed: ${oldRole.name} → ${newRole.name}`);
+  }
+  
+  if (oldRole.color !== newRole.color) {
+    console.log(`Color changed: ${oldRole.hexColor} → ${newRole.hexColor}`);
+  }
+});
+```
+
+### Parameters
+
+<ParamField path="oldRole" type="Role" required>
+  The role before the update.
+</ParamField>
+
+<ParamField path="newRole" type="Role" required>
+  The role after the update.
+</ParamField>
+
+<ParamField path="executor" type="GuildMember" required>
+  The member who updated the role.
+</ParamField>
+
+### Use cases
+
+- Log role updates in audit channels
+- Track permission changes
+- Monitor role modifications
+- Implement change notifications
+
+```typescript
+client.on("extendedRoleUpdate", (oldRole, newRole, executor) => {
+  const changes: string[] = [];
+  
+  if (oldRole.name !== newRole.name) {
+    changes.push(`Name: ${oldRole.name} → ${newRole.name}`);
+  }
+  
+  if (oldRole.color !== newRole.color) {
+    changes.push(`Color: ${oldRole.hexColor} → ${newRole.hexColor}`);
+  }
+  
+  if (oldRole.hoist !== newRole.hoist) {
+    changes.push(`Hoisted: ${oldRole.hoist} → ${newRole.hoist}`);
+  }
+  
+  if (oldRole.mentionable !== newRole.mentionable) {
+    changes.push(`Mentionable: ${oldRole.mentionable} → ${newRole.mentionable}`);
+  }
+  
+  if (oldRole.permissions.bitfield !== newRole.permissions.bitfield) {
+    changes.push("Permissions were modified");
+  }
+  
+  if (changes.length === 0) return;
+  
+  const auditChannel = newRole.guild.channels.cache.get("AUDIT_CHANNEL_ID");
+  
+  if (auditChannel?.isTextBased()) {
+    auditChannel.send({
+      embeds: [{
+        title: "Role Updated",
+        fields: [
+          { name: "Role", value: `${newRole.name} (${newRole.id})` },
+          { name: "Updated by", value: executor.user.tag },
+          { name: "Changes", value: changes.join("\n") }
+        ],
+        color: newRole.color,
+        timestamp: new Date().toISOString()
+      }]
+    });
+  }
+});
+```
+
+<Warning>
+  These events require your bot to have the `Guilds` intent enabled. Additionally, to fetch audit logs, your bot needs the `ViewAuditLog` permission.
+</Warning>

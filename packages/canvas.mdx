@@ -1,0 +1,342 @@
+---
+title: "@magicyan/canvas"
+description: "Canvas rendering utilities for creating dynamic images in Discord bots"
+---
+
+## Overview
+
+`@magicyan/canvas` provides utilities for creating dynamic images and graphics using the `@napi-rs/canvas` library. Perfect for welcome cards, stats images, and custom graphics in Discord bots.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/canvas @napi-rs/canvas
+```
+
+```bash yarn
+yarn add @magicyan/canvas @napi-rs/canvas
+```
+
+```bash pnpm
+pnpm add @magicyan/canvas @napi-rs/canvas
+```
+</CodeGroup>
+
+<Note>
+  Requires **@napi-rs/canvas ^0.1.78** as a peer dependency. This is a native module that provides canvas rendering.
+</Note>
+
+## Features
+
+### Enhanced Canvas Context
+
+The `CanvasContextFont` class provides advanced font management:
+
+```typescript
+import { createCanvas } from '@napi-rs/canvas';
+import { CanvasContextFont } from '@magicyan/canvas';
+
+const canvas = createCanvas(800, 400);
+const ctx = canvas.getContext('2d');
+const font = new CanvasContextFont(ctx);
+
+// Set font with enhanced features
+font.set('Arial', 24, 'bold', 'italic');
+font.color = '#FFFFFF';
+font.align = 'center';
+font.baseline = 'middle';
+
+// Apply to context
+font.apply();
+ctx.fillText('Hello World', 400, 200);
+```
+
+[View Canvas Builder API →](/api/canvas/canvas-builder)
+
+### Gradients
+
+Create linear and radial gradients:
+
+```typescript
+import { createLinearGradient, createRadialGradient } from '@magicyan/canvas';
+
+// Linear gradient
+const gradient = createLinearGradient(ctx, 0, 0, 800, 0, [
+  { offset: 0, color: '#FF0000' },
+  { offset: 0.5, color: '#00FF00' },
+  { offset: 1, color: '#0000FF' },
+]);
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 400);
+
+// Radial gradient
+const radial = createRadialGradient(ctx, 400, 200, 0, 400, 200, 200, [
+  { offset: 0, color: '#FFFFFF' },
+  { offset: 1, color: '#000000' },
+]);
+```
+
+[View Utilities API →](/api/canvas/utilities)
+
+### Image Filters
+
+Apply filters to images:
+
+```typescript
+import { applyFilter } from '@magicyan/canvas';
+
+// Available filters
+applyFilter(ctx, 'blur', 5);
+applyFilter(ctx, 'brightness', 1.2);
+applyFilter(ctx, 'contrast', 1.5);
+applyFilter(ctx, 'grayscale', 1);
+applyFilter(ctx, 'sepia', 0.8);
+```
+
+### Avatar Utilities
+
+Load and manipulate user avatars:
+
+```typescript
+import { loadImage } from '@napi-rs/canvas';
+import { roundedImage } from '@magicyan/canvas';
+
+// Load avatar
+const avatar = await loadImage(member.displayAvatarURL({ extension: 'png' }));
+
+// Draw rounded avatar
+const x = 50;
+const y = 50;
+const size = 100;
+const radius = 50; // Fully round
+
+ctx.save();
+roundedImage(ctx, x, y, size, size, radius);
+ctx.clip();
+ctx.drawImage(avatar, x, y, size, size);
+ctx.restore();
+```
+
+## Usage Examples
+
+### Welcome Card
+
+```typescript
+import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { CanvasContextFont, createLinearGradient, roundedImage } from '@magicyan/canvas';
+import { AttachmentBuilder } from 'discord.js';
+
+async function createWelcomeCard(member) {
+  const canvas = createCanvas(800, 300);
+  const ctx = canvas.getContext('2d');
+
+  // Background gradient
+  const gradient = createLinearGradient(ctx, 0, 0, 800, 300, [
+    { offset: 0, color: '#7289DA' },
+    { offset: 1, color: '#99AAB5' },
+  ]);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 800, 300);
+
+  // Load and draw avatar
+  const avatar = await loadImage(
+    member.displayAvatarURL({ extension: 'png', size: 256 })
+  );
+  
+  ctx.save();
+  roundedImage(ctx, 50, 50, 200, 200, 100);
+  ctx.clip();
+  ctx.drawImage(avatar, 50, 50, 200, 200);
+  ctx.restore();
+
+  // Avatar border
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(150, 150, 100, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Welcome text
+  const font = new CanvasContextFont(ctx);
+  font.set('Arial', 48, 'bold');
+  font.color = '#FFFFFF';
+  font.align = 'left';
+  font.baseline = 'top';
+  font.apply();
+  ctx.fillText('Welcome!', 280, 80);
+
+  // Username
+  font.size = 32;
+  font.weight = 'normal';
+  font.apply();
+  ctx.fillText(member.user.tag, 280, 140);
+
+  // Member count
+  font.size = 20;
+  font.apply();
+  ctx.fillText(`Member #${member.guild.memberCount}`, 280, 190);
+
+  return new AttachmentBuilder(canvas.toBuffer('image/png'), {
+    name: 'welcome.png',
+  });
+}
+
+// Usage in event
+client.on('guildMemberAdd', async (member) => {
+  const channel = member.guild.systemChannel;
+  if (!channel) return;
+
+  const attachment = await createWelcomeCard(member);
+  await channel.send({
+    content: `Welcome ${member}!`,
+    files: [attachment],
+  });
+});
+```
+
+### Server Stats Card
+
+```typescript
+import { createCanvas } from '@napi-rs/canvas';
+import { CanvasContextFont, createLinearGradient } from '@magicyan/canvas';
+import { AttachmentBuilder } from 'discord.js';
+
+async function createStatsCard(guild) {
+  const canvas = createCanvas(600, 400);
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  const gradient = createLinearGradient(ctx, 0, 0, 0, 400, [
+    { offset: 0, color: '#2C2F33' },
+    { offset: 1, color: '#23272A' },
+  ]);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 600, 400);
+
+  const font = new CanvasContextFont(ctx);
+  
+  // Title
+  font.set('Arial', 36, 'bold');
+  font.color = '#FFFFFF';
+  font.align = 'center';
+  font.baseline = 'top';
+  font.apply();
+  ctx.fillText(guild.name, 300, 40);
+
+  // Stats
+  const stats = [
+    { label: 'Members', value: guild.memberCount },
+    { label: 'Channels', value: guild.channels.cache.size },
+    { label: 'Roles', value: guild.roles.cache.size },
+    { label: 'Emojis', value: guild.emojis.cache.size },
+  ];
+
+  font.size = 24;
+  font.align = 'left';
+  font.apply();
+
+  let y = 120;
+  for (const stat of stats) {
+    // Label
+    font.color = '#99AAB5';
+    font.weight = 'normal';
+    font.apply();
+    ctx.fillText(stat.label, 100, y);
+
+    // Value
+    font.color = '#FFFFFF';
+    font.weight = 'bold';
+    font.apply();
+    ctx.fillText(stat.value.toString(), 400, y);
+
+    y += 50;
+  }
+
+  return new AttachmentBuilder(canvas.toBuffer('image/png'), {
+    name: 'stats.png',
+  });
+}
+```
+
+### Rounded Rectangles
+
+```typescript
+import { roundedRect } from '@magicyan/canvas';
+
+// Draw rounded rectangle
+ctx.fillStyle = '#7289DA';
+roundedRect(ctx, 50, 50, 200, 100, 20); // x, y, width, height, radius
+ctx.fill();
+
+// Rounded rectangle with stroke
+ctx.strokeStyle = '#FFFFFF';
+ctx.lineWidth = 3;
+roundedRect(ctx, 50, 50, 200, 100, 20);
+ctx.stroke();
+```
+
+## Type Exports
+
+```typescript
+import type {
+  RGBColor,           // { r: number, g: number, b: number }
+  RGBAColor,          // { r: number, g: number, b: number, a: number }
+  GradientColorStop,  // { offset: number, color: string }
+  FontWeight,         // 'normal' | 'bold' | 'lighter' | 'bolder' | number
+  FontStyle,          // 'normal' | 'italic' | 'oblique'
+} from '@magicyan/canvas';
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Image Loading">
+    Always handle image loading errors:
+    ```typescript
+    try {
+      const image = await loadImage(url);
+    } catch (error) {
+      console.error('Failed to load image:', error);
+      // Use fallback image
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Performance">
+    - Cache loaded images when possible
+    - Use appropriate canvas sizes (don't create unnecessarily large canvases)
+    - Consider using image CDNs with size parameters
+  </Accordion>
+
+  <Accordion title="Memory Management">
+    Canvas operations can be memory-intensive:
+    ```typescript
+    // Clear canvas when done
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Save and restore context state
+    ctx.save();
+    // ... operations
+    ctx.restore();
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Canvas Builder API" icon="palette" href="/api/canvas/canvas-builder">
+    Learn about the CanvasContextFont class
+  </Card>
+  <Card title="Utilities API" icon="wrench" href="/api/canvas/utilities">
+    Explore gradients, filters, and helpers
+  </Card>
+  <Card title="Canvas Guide" icon="book" href="/guides/canvas-rendering">
+    Complete tutorial with examples
+  </Card>
+  <Card title="Discord Package" icon="discord" href="/packages/discord">
+    Combine with Discord helpers
+  </Card>
+</CardGroup>

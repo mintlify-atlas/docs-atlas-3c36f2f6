@@ -1,0 +1,389 @@
+---
+title: Discord Bot Setup
+description: Complete guide to setting up a Discord bot project with Magicyan
+icon: robot
+---
+
+This guide walks you through setting up a complete Discord bot project using the Magicyan SDK. You'll learn how to structure your project, configure your bot, and use essential features from `@magicyan/discord`.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- Node.js 18 or higher installed
+- A Discord bot token from the [Discord Developer Portal](https://discord.com/developers/applications)
+- Basic knowledge of TypeScript and Discord.js
+
+## Installation
+
+<Steps>
+  <Step title="Create your project">
+    Initialize a new Node.js project:
+
+    ```bash
+    mkdir my-discord-bot
+    cd my-discord-bot
+    npm init -y
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install the required packages:
+
+    ```bash
+    npm install discord.js @magicyan/discord @magicyan/core
+    npm install -D typescript @types/node tsx
+    ```
+
+    <Note>
+      The `@magicyan/discord` package automatically exports all `@magicyan/core` functions, so you can use core utilities directly.
+    </Note>
+  </Step>
+
+  <Step title="Configure TypeScript">
+    Create a `tsconfig.json` file:
+
+    ```json tsconfig.json
+    {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "outDir": "./dist"
+      },
+      "include": ["src/**/*"],
+      "exclude": ["node_modules"]
+    }
+    ```
+  </Step>
+</Steps>
+
+## Project Structure
+
+Organize your bot with a clean structure:
+
+```
+my-discord-bot/
+├── src/
+│   ├── index.ts           # Main entry point
+│   ├── commands/          # Slash commands
+│   ├── events/            # Discord events
+│   └── utils/             # Helper functions
+├── .env                   # Environment variables
+├── package.json
+└── tsconfig.json
+```
+
+## Environment Configuration
+
+Create a `.env` file to store your bot token securely:
+
+```bash .env
+DISCORD_TOKEN=your_bot_token_here
+CLIENT_ID=your_application_id
+```
+
+<Warning>
+  Never commit your `.env` file to version control. Add it to `.gitignore`:
+  
+  ```bash .gitignore
+  node_modules/
+  .env
+  dist/
+  ```
+</Warning>
+
+## Creating Your Bot Client
+
+Create the main bot file at `src/index.ts`:
+
+```typescript src/index.ts
+import { Client, GatewayIntentBits } from "discord.js";
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.MessageContent,
+  ],
+});
+
+client.once("ready", (client) => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
+});
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+## Using Magicyan Discord Features
+
+### Finding Guild Resources
+
+Magicyan provides convenient functions to find channels, members, roles, and more:
+
+```typescript
+import { 
+  findChannel, 
+  findMember, 
+  findRole,
+  findCommand,
+  findEmoji 
+} from "@magicyan/discord";
+import { ChannelType } from "discord.js";
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (!interaction.inCachedGuild()) return;
+
+  const { guild } = interaction;
+
+  // Find channels
+  const general = findChannel(guild).byName("general");
+  const announcements = findChannel(guild, ChannelType.GuildAnnouncement)
+    .byName("updates");
+  const voiceChannel = findChannel(guild, ChannelType.GuildVoice)
+    .byId("832829213651763210");
+
+  // Find in a category
+  const ticket = findChannel(guild)
+    .inCategoryName("Tickets")
+    .byName(`ticket-${interaction.user.id}`);
+
+  // Find members
+  const finder = findMember(guild);
+  const member = finder.byId("264620632644255745")
+    ?? finder.byUsername("rincko")
+    ?? finder.byGlobalName("Rincko");
+
+  // Find roles
+  const memberRole = findRole(guild).byName("Member");
+  const adminRole = findRole(guild).byHexColor("#ff5454");
+
+  // Find commands
+  const registerCmd = findCommand(client).byName("register");
+
+  // Find emojis
+  const emoji = findEmoji(client).byName("discord");
+});
+```
+
+### Creating Components
+
+Easily create action rows and buttons:
+
+```typescript
+import { createRow, createLinkButton } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const row = createRow(
+  new ButtonBuilder({
+    customId: "button1",
+    label: "Click me",
+    style: ButtonStyle.Primary,
+  }),
+  new ButtonBuilder({
+    customId: "button2",
+    label: "Don't click",
+    style: ButtonStyle.Danger,
+  })
+);
+
+const linkRow = createRow(
+  createLinkButton({ 
+    label: "Github", 
+    url: "https://github.com/rinckodev" 
+  }),
+  createLinkButton({ 
+    label: "Youtube", 
+    url: "https://youtube.com/@rinckodev" 
+  })
+);
+
+await interaction.reply({ 
+  content: "Choose an option:",
+  components: [row, linkRow] 
+});
+```
+
+### Creating Modals
+
+Simplify modal creation with helper functions:
+
+```typescript
+import { createModalInput, createModalFields } from "@magicyan/discord";
+import { ModalBuilder, TextInputStyle } from "discord.js";
+
+// Method 1: Individual inputs
+const modal1 = new ModalBuilder({
+  customId: "user/profile",
+  title: "Profile Setup",
+  components: [
+    createModalInput({
+      customId: "name",
+      label: "Name",
+      style: TextInputStyle.Short,
+    }),
+    createModalInput({
+      customId: "bio",
+      label: "Biography",
+      style: TextInputStyle.Paragraph,
+      required: false,
+    }),
+  ]
+});
+
+// Method 2: Field records
+const modal2 = new ModalBuilder({
+  customId: "user/profile",
+  title: "Profile Setup",
+  components: createModalFields({
+    name: {
+      label: "Name",
+      style: TextInputStyle.Short,
+    },
+    age: {
+      label: "Age",
+      style: TextInputStyle.Short,
+    },
+    bio: {
+      label: "Biography",
+      style: TextInputStyle.Paragraph,
+      required: false,
+    },
+  })
+});
+
+await interaction.showModal(modal2);
+```
+
+Handle modal submissions:
+
+```typescript
+import { modalFieldsToRecord } from "@magicyan/discord";
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isModalSubmit()) return;
+  if (interaction.customId !== "user/profile") return;
+
+  const fields = modalFieldsToRecord(interaction.fields);
+  
+  console.log(fields.name);
+  console.log(fields.age);
+  console.log(fields.bio);
+
+  await interaction.reply({
+    content: `Profile created for ${fields.name}!`,
+    ephemeral: true,
+  });
+});
+```
+
+### Working with Embeds
+
+Create beautiful embeds easily:
+
+```typescript
+import { createEmbed } from "@magicyan/discord";
+import { AttachmentBuilder } from "discord.js";
+
+const embed = createEmbed({
+  title: "Welcome to the Server!",
+  description: "Thanks for joining us.",
+  color: "Random",
+  thumbnail: "https://github.com/rinckodev.png",
+  image: guild.iconURL(),
+  fields: [
+    { name: "Members", value: `${guild.memberCount}`, inline: true },
+    { name: "Created", value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
+  ],
+});
+
+// With attachment
+const attachment = new AttachmentBuilder(buffer, { 
+  name: "welcome.png" 
+});
+
+const embedWithImage = createEmbed({
+  title: "Your Stats",
+  description: "Here are your statistics",
+  image: attachment, // attachment://welcome.png
+});
+
+await channel.send({ embeds: [embedWithImage], files: [attachment] });
+```
+
+### Parsing Discord URLs
+
+Extract information from Discord URLs:
+
+```typescript
+import { 
+  getChannelUrlInfo, 
+  getMessageUrlInfo,
+  extractMentionId 
+} from "@magicyan/discord";
+
+// Channel URLs
+const channelUrl = "https://discord.com/channels/537817462272557057/832829213651763210";
+const { guildId, channelId } = getChannelUrlInfo(channelUrl);
+
+// Message URLs
+const messageUrl = "https://discord.com/channels/537817462272557057/1101949941712171078/1101950570035691530";
+const info = getMessageUrlInfo(messageUrl);
+console.log(info.guildId, info.channelId, info.messageId);
+
+// Extract mention IDs
+const userId = extractMentionId("<@264620632644255745>"); // 264620632644255745
+const channelId2 = extractMentionId("<#1068689068256403457>"); // 1068689068256403457
+const roleId = extractMentionId("<@&929925182796226632>"); // 929925182796226632
+```
+
+## Running Your Bot
+
+Add scripts to your `package.json`:
+
+```json package.json
+{
+  "scripts": {
+    "dev": "tsx --env-file=.env src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  }
+}
+```
+
+Run your bot in development:
+
+```bash
+npm run dev
+```
+
+<Tip>
+  Use `tsx --watch` to automatically reload your bot when files change:
+  
+  ```json
+  "dev": "tsx --watch --env-file=.env src/index.ts"
+  ```
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Events" icon="bolt" href="/guides/custom-events">
+    Learn about extended Discord events like member connections and timeouts
+  </Card>
+  <Card title="UI Components" icon="palette" href="/guides/ui-components">
+    Create interactive menus and prompts for your bot
+  </Card>
+  <Card title="Canvas Rendering" icon="image" href="/guides/canvas-rendering">
+    Generate custom images for welcome cards and statistics
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/core/format">
+    Explore the complete API documentation
+  </Card>
+</CardGroup>

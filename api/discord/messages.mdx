@@ -1,0 +1,331 @@
+---
+title: Messages
+description: Functions for finding and working with Discord messages
+---
+
+## findMessage
+
+Find messages in a text channel using various search criteria.
+
+```ts
+function findMessage(channel: GuildTextBasedChannel): MessageFinder
+```
+
+<ParamField path="channel" type="GuildTextBasedChannel" required>
+  The Discord text channel to search in
+</ParamField>
+
+### Return Value
+
+Returns an object with the following methods:
+
+<ResponseField name="all" type="(limit?: number) => Promise<Message[]>">
+  Fetch all messages in the channel up to the specified limit. Fetches in batches of 100.
+</ResponseField>
+
+<ResponseField name="byId" type="(id: string) => Message | undefined">
+  Find a message by its ID from cache
+</ResponseField>
+
+<ResponseField name="byContent" type="() => ContentFinder">
+  Returns an object with methods to find messages by content:
+  - `equals(content: string, ignoreCase?: boolean)`: Find message with exact content match
+  - `include(content: string, ignoreCase?: boolean)`: Find message containing the content
+</ResponseField>
+
+<ResponseField name="byFilter" type="(filter: Function) => Message | undefined">
+  Find a message using a custom filter function
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Find by ID
+import { findMessage } from "@magicyan/discord";
+
+// Find message from cache
+const message = findMessage(channel).byId("123456789");
+
+if (message) {
+  await message.react("✅");
+}
+```
+
+```ts Find by Content
+import { findMessage } from "@magicyan/discord";
+
+// Find message with exact content
+const exact = findMessage(channel).byContent().equals("Hello World");
+
+// Case-insensitive exact match
+const exactIgnoreCase = findMessage(channel)
+  .byContent()
+  .equals("hello world", true);
+
+// Find message containing text
+const contains = findMessage(channel)
+  .byContent()
+  .include("announcement");
+
+// Case-insensitive contains
+const containsIgnoreCase = findMessage(channel)
+  .byContent()
+  .include("announcement", true);
+```
+
+```ts Custom Filter
+import { findMessage } from "@magicyan/discord";
+
+// Find message by author
+const userMessage = findMessage(channel).byFilter(
+  msg => msg.author.id === userId
+);
+
+// Find message with embeds
+const embedMessage = findMessage(channel).byFilter(
+  msg => msg.embeds.length > 0
+);
+
+// Find pinned message
+const pinned = findMessage(channel).byFilter(
+  msg => msg.pinned
+);
+```
+
+```ts Fetch All Messages
+import { findMessage } from "@magicyan/discord";
+
+// Fetch up to 250 messages
+const messages = await findMessage(channel).all(250);
+
+console.log(`Found ${messages.length} messages`);
+
+// Fetch all messages (no limit)
+const allMessages = await findMessage(channel).all();
+```
+
+```ts Bulk Operations
+import { findMessage } from "@magicyan/discord";
+
+// Find and delete messages from a user
+const messages = await findMessage(channel).all(100);
+const userMessages = messages.filter(msg => msg.author.id === userId);
+
+for (const message of userMessages) {
+  await message.delete();
+}
+```
+
+</CodeGroup>
+
+<Note>
+The `all()` method fetches messages from the API in batches of 100. Use a reasonable limit to avoid rate limits and long fetch times.
+</Note>
+
+---
+
+## getMessageURLInfo
+
+Extract message, channel, and guild IDs from a Discord message URL.
+
+```ts
+function getMessageURLInfo(url: string): MessageURLInfo
+```
+
+<ParamField path="url" type="string" required>
+  A Discord message URL in the format `https://discord.com/channels/{guildId}/{channelId}/{messageId}`
+</ParamField>
+
+### Return Value
+
+<ResponseField name="messageId" type="string | undefined">
+  The message ID extracted from the URL
+</ResponseField>
+
+<ResponseField name="channelId" type="string | undefined">
+  The channel ID extracted from the URL
+</ResponseField>
+
+<ResponseField name="guildId" type="string | undefined">
+  The guild ID extracted from the URL
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Usage
+import { getMessageURLInfo } from "@magicyan/discord";
+
+const url = "https://discord.com/channels/123456789/987654321/555555555";
+const { messageId, channelId, guildId } = getMessageURLInfo(url);
+
+console.log(guildId);   // "123456789"
+console.log(channelId); // "987654321"
+console.log(messageId); // "555555555"
+```
+
+```ts Invalid URL
+import { getMessageURLInfo } from "@magicyan/discord";
+
+const url = "https://example.com/invalid";
+const { messageId, channelId, guildId } = getMessageURLInfo(url);
+
+console.log(messageId); // undefined
+console.log(channelId); // undefined
+console.log(guildId);   // undefined
+```
+
+```ts Validate URL
+import { getMessageURLInfo } from "@magicyan/discord";
+
+const url = interaction.options.getString("message-url", true);
+const { messageId, channelId, guildId } = getMessageURLInfo(url);
+
+if (!messageId) {
+  await interaction.reply({
+    content: "Invalid message URL!",
+    ephemeral: true
+  });
+  return;
+}
+
+// Continue with valid IDs...
+```
+
+</CodeGroup>
+
+---
+
+## fetchMessageFromURL
+
+Fetch a message directly from a Discord message URL.
+
+```ts
+function fetchMessageFromURL(
+  guild: Guild,
+  url: string
+): Promise<Message<true> | null>
+
+function fetchMessageFromURL(
+  client: Client,
+  url: string
+): Promise<Message | null>
+```
+
+<ParamField path="guild" type="Guild" required>
+  The Discord guild to fetch from (for guild-specific fetching)
+</ParamField>
+
+<ParamField path="client" type="Client" required>
+  The Discord client (for cross-guild fetching)
+</ParamField>
+
+<ParamField path="url" type="string" required>
+  The Discord message URL
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Fetch from Guild
+import { fetchMessageFromURL } from "@magicyan/discord";
+
+const url = "https://discord.com/channels/123/456/789";
+const message = await fetchMessageFromURL(guild, url);
+
+if (message) {
+  await interaction.reply({
+    content: `Message from ${message.author.tag}: ${message.content}`
+  });
+} else {
+  await interaction.reply({
+    content: "Could not fetch message!",
+    ephemeral: true
+  });
+}
+```
+
+```ts Fetch from Client
+import { fetchMessageFromURL } from "@magicyan/discord";
+
+// Can fetch messages from any guild the bot is in
+const url = interaction.options.getString("message-url", true);
+const message = await fetchMessageFromURL(client, url);
+
+if (message) {
+  // Message might be from a different guild
+  await interaction.reply({
+    embeds: [message.embeds[0]],
+    ephemeral: true
+  });
+}
+```
+
+```ts Quote Message
+import { fetchMessageFromURL } from "@magicyan/discord";
+import { EmbedBuilder } from "discord.js";
+
+const url = interaction.options.getString("message-url", true);
+const message = await fetchMessageFromURL(guild, url);
+
+if (!message) {
+  await interaction.reply({
+    content: "Message not found!",
+    ephemeral: true
+  });
+  return;
+}
+
+const embed = new EmbedBuilder()
+  .setAuthor({
+    name: message.author.tag,
+    iconURL: message.author.displayAvatarURL()
+  })
+  .setDescription(message.content || "*No content*")
+  .setTimestamp(message.createdAt)
+  .setFooter({ text: `#${message.channel.name}` });
+
+await interaction.reply({ embeds: [embed] });
+```
+
+```ts Error Handling
+import { fetchMessageFromURL } from "@magicyan/discord";
+
+try {
+  const url = interaction.options.getString("message-url", true);
+  const message = await fetchMessageFromURL(guild, url);
+  
+  if (!message) {
+    await interaction.reply({
+      content: "Message not found or bot doesn't have access!",
+      ephemeral: true
+    });
+    return;
+  }
+  
+  // Use the message
+  await message.reply("Referenced from another channel!");
+} catch (error) {
+  await interaction.reply({
+    content: "Failed to fetch message!",
+    ephemeral: true
+  });
+}
+```
+
+</CodeGroup>
+
+<Note>
+This function returns `null` if:
+- The URL is invalid
+- The channel doesn't exist
+- The message doesn't exist
+- The bot doesn't have permission to view the channel
+</Note>
+
+<Tip>
+Use the `guild` overload when you know the message is in the same guild for better type safety. Use the `client` overload to fetch messages from any guild the bot has access to.
+</Tip>

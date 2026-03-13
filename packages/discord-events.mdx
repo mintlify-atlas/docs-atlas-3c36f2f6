@@ -1,0 +1,337 @@
+---
+title: "@magicyan/discord-events"
+description: "Extended Discord.js events for advanced bot functionality"
+---
+
+## Overview
+
+`@magicyan/discord-events` extends the Discord.js event system with additional events that aren't available in the base library. These events provide more granular control over voice state changes, moderation actions, and other guild activities.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install discord.js @magicyan/discord-events
+```
+
+```bash yarn
+yarn add discord.js @magicyan/discord-events
+```
+
+```bash pnpm
+pnpm add discord.js @magicyan/discord-events
+```
+</CodeGroup>
+
+<Note>
+  Requires **discord.js ^14.19.2** as a peer dependency.
+</Note>
+
+## Setup
+
+Initialize extended events in your bot:
+
+```typescript
+import { Client } from 'discord.js';
+import { initDiscordEvents } from '@magicyan/discord-events';
+
+const client = new Client({ 
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration, // Required for moderation events
+    GatewayIntentBits.GuildVoiceStates, // Required for voice events
+  ]
+});
+
+// Initialize extended events
+initDiscordEvents(client);
+
+// Now you can listen to extended events
+client.on('guildMemberConnect', (member, channel) => {
+  console.log(`${member.user.tag} joined ${channel.name}`);
+});
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+[View Setup Guide →](/api/discord-events/setup)
+
+## Available Events
+
+### Voice Events
+
+#### guildMemberConnect
+Fired when a member joins a voice channel.
+
+```typescript
+client.on('guildMemberConnect', (member, channel) => {
+  console.log(`${member.user.tag} connected to ${channel.name}`);
+});
+```
+
+#### guildMemberDisconnect
+Fired when a member leaves a voice channel.
+
+```typescript
+client.on('guildMemberDisconnect', (member, channel) => {
+  console.log(`${member.user.tag} disconnected from ${channel.name}`);
+});
+```
+
+#### guildMemberMoved
+Fired when a member is moved between voice channels.
+
+```typescript
+client.on('guildMemberMoved', (member, oldChannel, newChannel) => {
+  console.log(`${member.user.tag} moved from ${oldChannel.name} to ${newChannel.name}`);
+});
+```
+
+[View Voice Events →](/api/discord-events/member-events)
+
+### Timeout Events
+
+#### guildMemberTimeoutAdd
+Fired when a member is timed out.
+
+```typescript
+client.on('guildMemberTimeoutAdd', (member, executor, reason, duration) => {
+  console.log(`${member.user.tag} was timed out by ${executor.user.tag}`);
+  console.log(`Reason: ${reason}`);
+  console.log(`Duration: ${duration.toISOString()}`);
+});
+```
+
+#### guildMemberTimeoutRemove
+Fired when a member's timeout is removed.
+
+```typescript
+client.on('guildMemberTimeoutRemove', (member, executor) => {
+  console.log(`${member.user.tag}'s timeout was removed by ${executor.user.tag}`);
+});
+```
+
+[View Timeout Events →](/api/discord-events/member-events)
+
+### Moderation Events
+
+#### userBanAdd
+Fired when a user is banned.
+
+```typescript
+client.on('userBanAdd', (ban, executor, reason) => {
+  console.log(`${ban.user.tag} was banned by ${executor.user.tag}`);
+  console.log(`Reason: ${reason || 'No reason provided'}`);
+});
+```
+
+#### userBanRemove
+Fired when a user is unbanned.
+
+```typescript
+client.on('userBanRemove', (ban, executor) => {
+  console.log(`${ban.user.tag} was unbanned by ${executor.user.tag}`);
+});
+```
+
+#### userKick
+Fired when a user is kicked.
+
+```typescript
+client.on('userKick', (member, executor, reason) => {
+  console.log(`${member.user.tag} was kicked by ${executor.user.tag}`);
+  console.log(`Reason: ${reason || 'No reason provided'}`);
+});
+```
+
+[View Moderation Events →](/api/discord-events/user-events)
+
+### Role Events
+
+#### extendedRoleCreate
+Fired when a role is created.
+
+```typescript
+client.on('extendedRoleCreate', (role, executor) => {
+  console.log(`Role ${role.name} created by ${executor.user.tag}`);
+});
+```
+
+#### extendedRoleUpdate
+Fired when a role is updated.
+
+```typescript
+client.on('extendedRoleUpdate', (oldRole, newRole) => {
+  console.log(`Role ${oldRole.name} was updated`);
+});
+```
+
+#### extendedRoleDelete
+Fired when a role is deleted.
+
+```typescript
+client.on('extendedRoleDelete', (role) => {
+  console.log(`Role ${role.name} was deleted`);
+});
+```
+
+[View Role Events →](/api/discord-events/role-events)
+
+### Channel Events
+
+#### extendedChannelDelete
+Fired when a channel is deleted.
+
+```typescript
+client.on('extendedChannelDelete', (channel) => {
+  console.log(`Channel ${channel.name} was deleted`);
+});
+```
+
+Alias: `guildChannelDelete`
+
+[View Channel Events →](/api/discord-events/channel-events)
+
+### Message Events
+
+#### webhookMessageCreate
+Fired when a webhook sends a message.
+
+```typescript
+client.on('webhookMessageCreate', (message) => {
+  console.log(`Webhook message in ${message.channel.name}`);
+});
+```
+
+## Complete Event List
+
+All 13 extended events:
+
+| Event | Category | Description |
+|-------|----------|-------------|
+| guildMemberConnect | Voice | Member joins voice channel |
+| guildMemberDisconnect | Voice | Member leaves voice channel |
+| guildMemberMoved | Voice | Member moved between channels |
+| guildMemberTimeoutAdd | Moderation | Member timed out |
+| guildMemberTimeoutRemove | Moderation | Timeout removed |
+| userBanAdd | Moderation | User banned |
+| userBanRemove | Moderation | User unbanned |
+| userKick | Moderation | User kicked |
+| extendedRoleCreate | Roles | Role created |
+| extendedRoleUpdate | Roles | Role updated |
+| extendedRoleDelete | Roles | Role deleted |
+| extendedChannelDelete | Channels | Channel deleted |
+| webhookMessageCreate | Messages | Webhook message sent |
+
+## Required Intents
+
+Different events require different gateway intents:
+
+```typescript
+import { GatewayIntentBits } from 'discord.js';
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,           // Required for all events
+    GatewayIntentBits.GuildMembers,     // For member events
+    GatewayIntentBits.GuildModeration,  // For ban/kick/timeout events
+    GatewayIntentBits.GuildVoiceStates, // For voice events
+    GatewayIntentBits.GuildMessages,    // For webhook messages
+  ]
+});
+```
+
+<Warning>
+  Some intents require verification for bots in 100+ servers. See [Discord's documentation](https://discord.com/developers/docs/topics/gateway#privileged-intents) for details.
+</Warning>
+
+## Usage Example
+
+Complete moderation logging system:
+
+```typescript
+import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
+import { initDiscordEvents } from '@magicyan/discord-events';
+import { findChannel } from '@magicyan/discord';
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration,
+  ]
+});
+
+initDiscordEvents(client);
+
+// Log all moderation actions
+function logModeration(guild, embed) {
+  const logChannel = findChannel(guild).byName('mod-log');
+  if (logChannel?.isTextBased()) {
+    logChannel.send({ embeds: [embed] });
+  }
+}
+
+client.on('userBanAdd', (ban, executor, reason) => {
+  const embed = new EmbedBuilder()
+    .setTitle('Member Banned')
+    .setDescription(`${ban.user.tag} was banned`)
+    .addFields(
+      { name: 'Moderator', value: executor.user.tag },
+      { name: 'Reason', value: reason || 'No reason provided' }
+    )
+    .setColor('Red')
+    .setTimestamp();
+  
+  logModeration(ban.guild, embed);
+});
+
+client.on('userKick', (member, executor, reason) => {
+  const embed = new EmbedBuilder()
+    .setTitle('Member Kicked')
+    .setDescription(`${member.user.tag} was kicked`)
+    .addFields(
+      { name: 'Moderator', value: executor.user.tag },
+      { name: 'Reason', value: reason || 'No reason provided' }
+    )
+    .setColor('Orange')
+    .setTimestamp();
+  
+  logModeration(member.guild, embed);
+});
+
+client.on('guildMemberTimeoutAdd', (member, executor, reason, duration) => {
+  const embed = new EmbedBuilder()
+    .setTitle('Member Timed Out')
+    .setDescription(`${member.user.tag} was timed out`)
+    .addFields(
+      { name: 'Moderator', value: executor.user.tag },
+      { name: 'Reason', value: reason || 'No reason provided' },
+      { name: 'Until', value: duration.toLocaleString() }
+    )
+    .setColor('Yellow')
+    .setTimestamp();
+  
+  logModeration(member.guild, embed);
+});
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Setup Guide" icon="bolt" href="/api/discord-events/setup">
+    Learn how to set up extended events
+  </Card>
+  <Card title="Custom Events Guide" icon="book" href="/guides/custom-events">
+    Build a complete moderation logger
+  </Card>
+  <Card title="Discord Package" icon="discord" href="/packages/discord">
+    Combine with Discord helpers
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/discord-events/member-events">
+    Explore all event signatures
+  </Card>
+</CardGroup>

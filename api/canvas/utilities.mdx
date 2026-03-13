@@ -1,0 +1,476 @@
+---
+title: Utilities
+description: Canvas utility functions for gradients, filters, and avatars
+---
+
+Utility functions for advanced canvas operations including gradient color stops, image filters, and avatar generation.
+
+## Gradients
+
+### setGradientStops
+
+```typescript
+function setGradientStops<T extends ContextGradient>(
+  gradient: T,
+  stops: ContextGradientStops
+): ContextGradient
+```
+
+Applies color stops to a canvas gradient object.
+
+<ParamField path="gradient" type="ContextGradient" required>
+  A canvas gradient object (linear or radial gradient)
+</ParamField>
+
+<ParamField path="stops" type="ContextGradientStops" required>
+  Object mapping stop positions (0-1) to color values
+  
+  ```typescript
+  type ContextGradientStops = Record<number, string | CssColors>;
+  ```
+</ParamField>
+
+<ResponseField name="return" type="ContextGradient">
+  The gradient object with color stops applied
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Linear Gradient
+import { setGradientStops } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const gradient = ctx.createLinearGradient(0, 0, 800, 0);
+setGradientStops(gradient, {
+  0: "#ff0000",
+  0.5: "#00ff00",
+  1: "#0000ff",
+});
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 600);
+```
+
+```typescript Radial Gradient
+import { setGradientStops } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const gradient = ctx.createRadialGradient(400, 300, 0, 400, 300, 300);
+setGradientStops(gradient, {
+  0: "rgba(255, 255, 255, 1)",
+  0.5: "rgba(255, 255, 0, 0.8)",
+  1: "rgba(255, 0, 0, 0.3)",
+});
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 600);
+```
+
+```typescript Multiple Stops
+import { setGradientStops } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const gradient = ctx.createLinearGradient(0, 0, 0, 600);
+setGradientStops(gradient, {
+  0: "#1a1a2e",
+  0.25: "#16213e",
+  0.5: "#0f3460",
+  0.75: "#533483",
+  1: "#e94560",
+});
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 600);
+```
+</CodeGroup>
+
+---
+
+## Filters
+
+The `Filter` object provides CSS filter functions for canvas contexts.
+
+### blur
+
+```typescript
+Function blur(amount: number): string
+```
+
+Creates a blur filter.
+
+<ParamField path="amount" type="number" required>
+  Blur radius in pixels
+</ParamField>
+
+### opacity
+
+```typescript
+function opacity(percentage: number): string
+```
+
+Creates an opacity filter.
+
+<ParamField path="percentage" type="number" required>
+  Opacity percentage (0-100)
+</ParamField>
+
+### hueRotate
+
+```typescript
+function hueRotate(deg: number): string
+```
+
+Rotates the hue of colors.
+
+<ParamField path="deg" type="number" required>
+  Rotation angle in degrees
+</ParamField>
+
+### sepia
+
+```typescript
+function sepia(percentage: number): string
+```
+
+Applies a sepia tone.
+
+<ParamField path="percentage" type="number" required>
+  Sepia intensity percentage (0-100)
+</ParamField>
+
+### brightness
+
+```typescript
+function brightness(percentage: number): string
+```
+
+Adjusts brightness.
+
+<ParamField path="percentage" type="number" required>
+  Brightness percentage (0-200+, 100 is normal)
+</ParamField>
+
+### contrast
+
+```typescript
+function contrast(percentage: number): string
+```
+
+Adjusts contrast.
+
+<ParamField path="percentage" type="number" required>
+  Contrast percentage (0-200+, 100 is normal)
+</ParamField>
+
+### invert
+
+```typescript
+function invert(percentage: number): string
+```
+
+Inverts colors.
+
+<ParamField path="percentage" type="number" required>
+  Inversion percentage (0-100)
+</ParamField>
+
+### grayscale
+
+```typescript
+function grayscale(percentage: number): string
+```
+
+Converts to grayscale.
+
+<ParamField path="percentage" type="number" required>
+  Grayscale intensity percentage (0-100)
+</ParamField>
+
+### dropShadow
+
+```typescript
+function dropShadow(
+  x: number,
+  y: number,
+  blur: number,
+  color?: string | CssColors
+): string
+```
+
+Creates a drop shadow effect.
+
+<ParamField path="x" type="number" required>
+  Horizontal offset in pixels
+</ParamField>
+
+<ParamField path="y" type="number" required>
+  Vertical offset in pixels
+</ParamField>
+
+<ParamField path="blur" type="number" required>
+  Blur radius in pixels
+</ParamField>
+
+<ParamField path="color" type="string | CssColors">
+  Shadow color (default: `"black"`)
+</ParamField>
+
+### Example
+
+<CodeGroup>
+```typescript Individual Filters
+import { blur, opacity, grayscale } from "@magicyan/canvas";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+const image = await loadImage("./image.png");
+
+// Apply blur
+ctx.filter = blur(5);
+ctx.drawImage(image, 0, 0);
+
+// Apply grayscale
+ctx.filter = grayscale(100);
+ctx.drawImage(image, 0, 0);
+
+// Apply opacity
+ctx.filter = opacity(50);
+ctx.drawImage(image, 0, 0);
+```
+
+```typescript Combined Filters
+import { blur, brightness, contrast } from "@magicyan/canvas";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+const image = await loadImage("./photo.jpg");
+
+// Combine multiple filters
+ctx.filter = `${brightness(110)} ${contrast(120)} ${blur(2)}`;
+ctx.drawImage(image, 0, 0, 800, 600);
+```
+
+```typescript Drop Shadow
+import { dropShadow } from "@magicyan/canvas";
+import { createCanvas } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+ctx.filter = dropShadow(5, 5, 10, "rgba(0, 0, 0, 0.5)");
+ctx.fillStyle = "#ffffff";
+ctx.fillRect(100, 100, 200, 200);
+```
+
+```typescript Filter Object
+import { Filter } from "@magicyan/canvas";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+const image = await loadImage("./banner.png");
+
+// Using the Filter object directly
+ctx.filter = [
+  Filter.brightness(120),
+  Filter.contrast(110),
+  Filter.hueRotate(30),
+  Filter.sepia(20)
+].join(" ");
+
+ctx.drawImage(image, 0, 0);
+```
+</CodeGroup>
+
+---
+
+## Avatar Generation
+
+### createAvatar
+
+```typescript
+function createAvatar(image: Image): Canvas
+function createAvatar(image: Image, radius: number): Canvas
+function createAvatar(image: Image, radius: [number, number]): Canvas
+function createAvatar(
+  image: Image,
+  radius: [number, number, number, number]
+): Canvas
+```
+
+Creates a rounded avatar image with customizable corner radii.
+
+<ParamField path="image" type="Image" required>
+  The source image to convert into an avatar
+</ParamField>
+
+<ParamField path="radius" type="number | [number, number] | [number, number, number, number]">
+  Corner radius configuration:
+  - **Omitted**: Circular avatar (radius = min(width, height) / 2)
+  - **Single number**: All corners have the same radius
+  - **Two numbers**: `[topLeft/bottomRight, topRight/bottomLeft]`
+  - **Four numbers**: `[topLeft, topRight, bottomRight, bottomLeft]`
+</ParamField>
+
+<ResponseField name="return" type="Canvas">
+  A new canvas with the rounded avatar image
+</ResponseField>
+
+#### Example
+
+<CodeGroup>
+```typescript Circular Avatar
+import { createAvatar } from "@magicyan/canvas";
+import { loadImage } from "@napi-rs/canvas";
+
+const userImage = await loadImage("https://example.com/avatar.png");
+const avatar = createAvatar(userImage);
+
+// Use the avatar canvas
+const buffer = avatar.toBuffer("image/png");
+```
+
+```typescript Custom Radius
+import { createAvatar } from "@magicyan/canvas";
+import { loadImage } from "@napi-rs/canvas";
+
+const userImage = await loadImage("./profile.jpg");
+
+// Rounded corners with 20px radius
+const avatar = createAvatar(userImage, 20);
+
+const buffer = avatar.toBuffer("image/png");
+```
+
+```typescript Different Corner Radii
+import { createAvatar } from "@magicyan/canvas";
+import { loadImage } from "@napi-rs/canvas";
+
+const bannerImage = await loadImage("./banner.png");
+
+// Different radius for opposite corners
+const roundedBanner = createAvatar(bannerImage, [30, 10]);
+// topLeft: 30px, topRight: 10px, bottomRight: 30px, bottomLeft: 10px
+```
+
+```typescript Individual Corner Control
+import { createAvatar } from "@magicyan/canvas";
+import { loadImage } from "@napi-rs/canvas";
+
+const cardImage = await loadImage("./card.png");
+
+// Fully customized corners
+const roundedCard = createAvatar(cardImage, [20, 0, 20, 0]);
+// topLeft: 20px, topRight: 0px, bottomRight: 20px, bottomLeft: 0px
+
+const buffer = roundedCard.toBuffer("image/png");
+```
+
+```typescript Discord Profile Banner
+import { createAvatar } from "@magicyan/canvas";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+
+const canvas = createCanvas(800, 400);
+const ctx = canvas.getContext("2d");
+
+const profilePic = await loadImage(user.displayAvatarURL({ extension: "png" }));
+const avatar = createAvatar(profilePic, 60); // 60px corner radius
+
+// Draw rounded avatar on banner
+ctx.drawImage(avatar, 50, 50, 128, 128);
+
+const buffer = canvas.toBuffer("image/png");
+```
+</CodeGroup>
+
+---
+
+## Types
+
+### ContextGradient
+
+```typescript
+interface ContextGradient {
+  addColorStop(offset: number, color: string): void;
+}
+```
+
+Represents a canvas gradient object (linear or radial).
+
+### ContextGradientStops
+
+```typescript
+type ContextGradientStops = Record<number, StrOr<CssColors>>;
+```
+
+Mapping of gradient stop positions (0-1) to color values.
+
+### StrOr
+
+```typescript
+type StrOr<Completions> = (string & {}) | Completions;
+```
+
+Utility type that provides type hints while allowing any string value.
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Combine filters for better effects">
+    Stack multiple filters for professional-looking results:
+    ```typescript
+    ctx.filter = `${brightness(110)} ${contrast(105)} ${blur(1)}`;
+    ```
+  </Accordion>
+  
+  <Accordion title="Use gradient stops efficiently">
+    Define gradient stops as constants for reusability:
+    ```typescript
+    const brandGradient = {
+      0: "#667eea",
+      0.5: "#764ba2",
+      1: "#f093fb"
+    };
+    
+    setGradientStops(gradient, brandGradient);
+    ```
+  </Accordion>
+  
+  <Accordion title="Cache rounded avatars">
+    Create and cache rounded avatars to avoid recreating them:
+    ```typescript
+    const avatarCache = new Map<string, Canvas>();
+    
+    function getAvatar(userId: string, imageUrl: string) {
+      if (!avatarCache.has(userId)) {
+        const image = await loadImage(imageUrl);
+        avatarCache.set(userId, createAvatar(image));
+      }
+      return avatarCache.get(userId);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Reset filters after use">
+    Always reset the filter property after applying effects:
+    ```typescript
+    ctx.filter = blur(5);
+    ctx.drawImage(image, 0, 0);
+    ctx.filter = "none"; // Reset
+    ```
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,113 @@
+---
+title: Members
+description: Functions for finding and working with guild members
+---
+
+## findMember
+
+Find guild members using various search criteria.
+
+```ts
+function findMember(guild: Guild): MemberFinder
+```
+
+<ParamField path="guild" type="Guild" required>
+  The Discord guild to search in
+</ParamField>
+
+### Return Value
+
+Returns an object with the following methods:
+
+<ResponseField name="byGlobalName" type="(globalName: string, filter?) => GuildMember | undefined">
+  Find a member by their global display name with optional additional filter
+</ResponseField>
+
+<ResponseField name="byNickname" type="(nickname: string, filter?) => GuildMember | undefined">
+  Find a member by their server nickname with optional additional filter
+</ResponseField>
+
+<ResponseField name="byUsername" type="(username: string, filter?) => GuildMember | undefined">
+  Find a member by their Discord username with optional additional filter
+</ResponseField>
+
+<ResponseField name="byDisplayName" type="(displayName: string, filter?) => GuildMember | undefined">
+  Find a member by their display name (nickname or username) with optional additional filter
+</ResponseField>
+
+<ResponseField name="byId" type="(id: string) => GuildMember | undefined">
+  Find a member by their user ID
+</ResponseField>
+
+<ResponseField name="byFilter" type="(filter: Function) => GuildMember | undefined">
+  Find a member using a custom filter function
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Search
+import { findMember } from "@magicyan/discord";
+
+// Find by ID (fastest)
+const member = findMember(guild).byId("123456789");
+
+// Find by username
+const user = findMember(guild).byUsername("john_doe");
+
+// Find by display name
+const player = findMember(guild).byDisplayName("John");
+```
+
+```ts With Additional Filter
+import { findMember } from "@magicyan/discord";
+
+// Find member with additional filtering
+const moderator = findMember(guild).byUsername(
+  "john_doe",
+  member => member.permissions.has("ModerateMembers")
+);
+
+// Find member by global name with role check
+const vip = findMember(guild).byGlobalName(
+  "John Doe",
+  member => member.roles.cache.has(vipRoleId)
+);
+```
+
+```ts Custom Filter
+import { findMember } from "@magicyan/discord";
+
+// Find member using custom criteria
+const newest = findMember(guild).byFilter(
+  member => member.joinedTimestamp === guild.members.cache
+    .sort((a, b) => b.joinedTimestamp! - a.joinedTimestamp!)
+    .first()?.joinedTimestamp
+);
+
+// Find member by role and activity
+const activeModerator = findMember(guild).byFilter(
+  member => member.roles.cache.has(modRoleId) && 
+            member.presence?.status === "online"
+);
+```
+
+```ts Nickname vs Global Name
+import { findMember } from "@magicyan/discord";
+
+// byNickname only finds server nicknames
+const withNickname = findMember(guild).byNickname("Server Nick");
+
+// byGlobalName finds the global Discord display name
+const withGlobalName = findMember(guild).byGlobalName("Global Name");
+
+// byDisplayName finds either nickname or username
+const withDisplay = findMember(guild).byDisplayName("Any Display Name");
+```
+
+</CodeGroup>
+
+<Note>
+The `byId` method is the fastest way to find a member as it uses cache.get() directly. Other methods iterate through the cache.
+</Note>

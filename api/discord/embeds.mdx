@@ -1,0 +1,505 @@
+---
+title: Embeds
+description: Enhanced embed builder with additional features and utilities
+---
+
+## createEmbed
+
+Create enhanced embeds with extended functionality beyond the standard EmbedBuilder.
+
+```ts
+function createEmbed<B extends boolean>(options: CreateEmbedOptions<B>): EmbedPlusBuilderReturn<B>
+```
+
+<ParamField path="options" type="CreateEmbedOptions" required>
+  Configuration object for the embed
+
+  <Expandable title="properties">
+    <ResponseField name="title" type="string">
+      The embed title
+    </ResponseField>
+
+    <ResponseField name="description" type="string | string[]">
+      The embed description. If an array is provided, items are joined with line breaks
+    </ResponseField>
+
+    <ResponseField name="color" type="ColorResolvable">
+      The embed color (hex string, number, or ColorResolvable)
+    </ResponseField>
+
+    <ResponseField name="url" type="string">
+      URL for the embed title
+    </ResponseField>
+
+    <ResponseField name="thumbnail" type="string | Attachment | AttachmentBuilder">
+      Thumbnail image source
+    </ResponseField>
+
+    <ResponseField name="image" type="string | Attachment | AttachmentBuilder">
+      Main image source
+    </ResponseField>
+
+    <ResponseField name="fields" type="EmbedPlusFieldData[]">
+      Array of embed fields
+    </ResponseField>
+
+    <ResponseField name="footer" type="string | EmbedPlusFooterData">
+      Footer text or footer configuration object
+    </ResponseField>
+
+    <ResponseField name="author" type="EmbedPlusAuthorData">
+      Author configuration with name, url, and iconURL
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="string | number | Date | boolean">
+      Timestamp for the embed. If `true`, uses current time
+    </ResponseField>
+
+    <ResponseField name="extends" type="EmbedBuilder | EmbedData">
+      Base embed to extend from
+    </ResponseField>
+
+    <ResponseField name="mergeFields" type="boolean">
+      Whether to merge fields when extending an embed (default: false)
+    </ResponseField>
+
+    <ResponseField name="array" type="boolean">
+      If true, returns an array of embeds
+    </ResponseField>
+
+    <ResponseField name="from" type="Interaction | Message">
+      Extract embeds from an interaction or message
+    </ResponseField>
+
+    <ResponseField name="fromIndex" type="number">
+      Index of embed to use when `from` is specified (default: 0)
+    </ResponseField>
+  </Expandable>
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Embed
+import { createEmbed } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "Welcome!",
+  description: "Thanks for joining our server",
+  color: "#5865F2",
+  footer: "Server Team",
+  timestamp: true
+});
+
+await interaction.reply({ embeds: [embed] });
+```
+
+```ts Array Description
+import { createEmbed } from "@magicyan/discord";
+
+// Array descriptions are automatically joined with line breaks
+const embed = createEmbed({
+  title: "Server Rules",
+  description: [
+    "1. Be respectful to everyone",
+    "2. No spam or advertising",
+    "3. Follow Discord TOS"
+  ],
+  color: "Red"
+});
+```
+
+```ts With Fields
+import { createEmbed } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "User Info",
+  fields: [
+    { name: "Username", value: member.user.username, inline: true },
+    { name: "ID", value: member.id, inline: true },
+    { name: "Joined", value: member.joinedAt?.toDateString() || "Unknown" }
+  ],
+  thumbnail: member.displayAvatarURL(),
+  color: member.displayColor
+});
+```
+
+```ts Extending Embeds
+import { createEmbed } from "@magicyan/discord";
+
+const baseEmbed = createEmbed({
+  color: "#5865F2",
+  footer: "Bot Team",
+  timestamp: true
+});
+
+// Create new embed extending the base
+const embed = createEmbed({
+  extends: baseEmbed,
+  title: "Announcement",
+  description: "New feature available!"
+});
+```
+
+```ts From Interaction
+import { createEmbed } from "@magicyan/discord";
+
+// Get embeds from interaction message
+const embeds = createEmbed({
+  array: true,
+  from: interaction
+});
+
+// Modify first embed
+embeds[0].setDescription("Updated content");
+
+await interaction.update({ embeds });
+```
+
+</CodeGroup>
+
+---
+
+## EmbedPlusBuilder
+
+Extended embed builder with additional methods and utilities.
+
+### Fields Management
+
+The `EmbedPlusBuilder` includes an enhanced `fields` property for managing embed fields:
+
+<ResponseField name="fields.length" type="number">
+  Get the number of fields in the embed
+</ResponseField>
+
+<ResponseField name="fields.record" type="Record<string, string>">
+  Get fields as a key-value record object
+</ResponseField>
+
+<ResponseField name="fields.get" type="(name: string | number) => Field | undefined">
+  Get a field by name or index
+</ResponseField>
+
+<ResponseField name="fields.find" type="(predicate: Function) => Field | undefined">
+  Find a field using a predicate function
+</ResponseField>
+
+<ResponseField name="fields.push" type="(...fields: Field[]) => this">
+  Add fields to the end of the fields array
+</ResponseField>
+
+<ResponseField name="fields.set" type="(...fields: Field[]) => this">
+  Replace all fields with new ones
+</ResponseField>
+
+<ResponseField name="fields.insert" type="(index: number, ...fields: Field[]) => this">
+  Insert fields at a specific index
+</ResponseField>
+
+<ResponseField name="fields.update" type="(predicate: string | number | Function, field: Partial<Field>) => boolean">
+  Update a field by name, index, or predicate
+</ResponseField>
+
+<ResponseField name="fields.delete" type="(predicate: string | number | Function) => boolean">
+  Delete a field by name, index, or predicate
+</ResponseField>
+
+<ResponseField name="fields.clear" type="() => this">
+  Remove all fields
+</ResponseField>
+
+<ResponseField name="fields.map" type="(callback: Function) => any[]">
+  Map over fields like an array
+</ResponseField>
+
+<ResponseField name="fields.toArray" type="() => Field[]">
+  Convert fields to array
+</ResponseField>
+
+### Additional Methods
+
+<ResponseField name="update" type="(data: EmbedPlusData) => this">
+  Update the embed with new data, merging fields by default
+</ResponseField>
+
+<ResponseField name="has" type="(property: keyof EmbedPlusData) => boolean">
+  Check if the embed has a specific property set
+</ResponseField>
+
+<ResponseField name="toArray" type="() => EmbedPlusBuilder[]">
+  Convert the embed to an array containing itself
+</ResponseField>
+
+<ResponseField name="toString" type="(space?: number) => string">
+  Convert the embed to a JSON string
+</ResponseField>
+
+<ResponseField name="toAttachment" type="(data?: AttachmentData, space?: number) => AttachmentBuilder">
+  Convert the embed to a JSON file attachment
+</ResponseField>
+
+<ResponseField name="setAsset" type="(asset: 'thumbnail' | 'image', source: string | Attachment) => this">
+  Set thumbnail or image from various sources
+</ResponseField>
+
+<ResponseField name="setElementImageURL" type="(element: 'thumbnail' | 'image' | 'author' | 'footer', url: string | null) => this">
+  Set image URL for any embed element
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Fields Management
+import { createEmbed } from "@magicyan/discord";
+
+const embed = createEmbed({ title: "User Stats" });
+
+// Add fields
+embed.fields.push(
+  { name: "Level", value: "10", inline: true },
+  { name: "XP", value: "1500", inline: true }
+);
+
+// Get field by name
+const levelField = embed.fields.get("Level");
+
+// Update field
+embed.fields.update("Level", { value: "11" });
+
+// Delete field
+embed.fields.delete("XP");
+
+// Get as record
+const fieldsObj = embed.fields.record;
+console.log(fieldsObj.Level); // "11"
+```
+
+```ts Update Embed
+import { createEmbed } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "Status",
+  description: "Loading...",
+  color: "Yellow"
+});
+
+// Later update the embed
+embed.update({
+  description: "Complete!",
+  color: "Green",
+  timestamp: true
+});
+```
+
+```ts Export as JSON
+import { createEmbed } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "Configuration",
+  description: "Server settings"
+});
+
+// Convert to attachment
+const attachment = embed.toAttachment({ name: "embed.json" });
+
+await interaction.reply({ files: [attachment] });
+```
+
+</CodeGroup>
+
+---
+
+## createEmbedAuthor
+
+Create embed author configuration from Discord objects.
+
+```ts
+function createEmbedAuthor<T extends AuthorType>(
+  type: T,
+  options?: CreateEmbedAuthorOptions<T>
+): EmbedAuthorData
+```
+
+<ParamField path="type" type="Guild | GuildMember | User | ClientUser" required>
+  The Discord object to create author from
+</ParamField>
+
+<ParamField path="options" type="CreateEmbedAuthorOptions">
+  <Expandable title="properties">
+    <ResponseField name="property" type="IdentityProperty">
+      Property to use for the name: `"username"`, `"displayName"`, `"id"`, `"globalName"`, or `"nickname"`
+    </ResponseField>
+
+    <ResponseField name="iconURL" type="string">
+      Custom icon URL (overrides default avatar)
+    </ResponseField>
+
+    <ResponseField name="url" type="string">
+      URL for the author name
+    </ResponseField>
+
+    <ResponseField name="prefix" type="string">
+      Text to prepend to the name
+    </ResponseField>
+
+    <ResponseField name="suffix" type="string">
+      Text to append to the name
+    </ResponseField>
+
+    <ResponseField name="extension" type="ImageExtension">
+      Image format (png, jpg, gif, webp)
+    </ResponseField>
+
+    <ResponseField name="forceStatic" type="boolean">
+      Force static image even if animated is available
+    </ResponseField>
+
+    <ResponseField name="size" type="number">
+      Image size (default: 1024)
+    </ResponseField>
+  </Expandable>
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts From User
+import { createEmbed, createEmbedAuthor } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "Profile",
+  author: createEmbedAuthor(interaction.user),
+  description: "User information"
+});
+```
+
+```ts From Member
+import { createEmbed, createEmbedAuthor } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "Member Info",
+  author: createEmbedAuthor(member, {
+    property: "displayName",
+    prefix: "👤 "
+  })
+});
+```
+
+```ts From Guild
+import { createEmbed, createEmbedAuthor } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "Server Stats",
+  author: createEmbedAuthor(guild, {
+    property: "name",
+    url: `https://discord.com/guilds/${guild.id}`
+  })
+});
+```
+
+```ts Custom Image Options
+import { createEmbedAuthor } from "@magicyan/discord";
+
+const author = createEmbedAuthor(user, {
+  size: 512,
+  extension: "png",
+  forceStatic: true,
+  suffix: " (Verified)"
+});
+```
+
+</CodeGroup>
+
+---
+
+## createEmbedFiles
+
+Convert embed image URLs to attachments for better performance and reliability.
+
+```ts
+function createEmbedFiles(
+  embed: EmbedBuilder,
+  options?: CreateEmbedFilesOptions
+): AttachmentBuilder[]
+```
+
+<ParamField path="embed" type="EmbedBuilder" required>
+  The embed to process
+</ParamField>
+
+<ParamField path="options" type="CreateEmbedFilesOptions">
+  <Expandable title="properties">
+    <ResponseField name="ignore" type="ImageElementProperty[]">
+      Array of elements to ignore: `"author"`, `"thumbnail"`, `"image"`, `"footer"`
+    </ResponseField>
+
+    <ResponseField name="extensions" type="Record<ImageElementProperty, ImageFileExtension>">
+      File extensions for each element (png, jpg, gif, webp)
+    </ResponseField>
+
+    <ResponseField name="names" type="Record<ImageElementProperty, string>">
+      Custom filenames for each element
+    </ResponseField>
+  </Expandable>
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+
+```ts Basic Usage
+import { createEmbed, createEmbedFiles } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "Profile",
+  thumbnail: "https://example.com/avatar.png",
+  image: "https://example.com/banner.jpg",
+  footer: { text: "Bot", iconURL: "https://example.com/logo.png" }
+});
+
+const files = createEmbedFiles(embed);
+
+await interaction.reply({ embeds: [embed], files });
+```
+
+```ts Ignore Elements
+import { createEmbedFiles } from "@magicyan/discord";
+
+// Only convert thumbnail and image, ignore footer
+const files = createEmbedFiles(embed, {
+  ignore: ["footer"]
+});
+```
+
+```ts Custom Extensions
+import { createEmbedFiles } from "@magicyan/discord";
+
+const files = createEmbedFiles(embed, {
+  extensions: {
+    thumbnail: "webp",
+    image: "jpg",
+    footer: "png"
+  }
+});
+```
+
+```ts Custom Names
+import { createEmbedFiles } from "@magicyan/discord";
+
+const files = createEmbedFiles(embed, {
+  names: {
+    thumbnail: "user-avatar",
+    image: "user-banner",
+    footer: "bot-icon"
+  }
+});
+```
+
+</CodeGroup>
+
+<Note>
+This function modifies the embed to use `attachment://` URLs and returns the attachment builders. This is useful for local files or when you want better control over caching.
+</Note>

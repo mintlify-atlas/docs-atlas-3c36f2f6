@@ -1,0 +1,302 @@
+---
+title: "Format"
+description: "Text formatting and manipulation utilities"
+---
+
+The format module provides utilities for building, formatting, and manipulating text strings.
+
+## joinBuilder
+
+Joins multiple text segments with a custom separator, filtering out null, undefined, and boolean values.
+
+<ParamField path="separator" type="string" required>
+  The separator string to use between text segments
+</ParamField>
+
+<ParamField path="text" type="BuilderText[]" required>
+  Variable number of text segments to join. Each can be a string, null, undefined, boolean, or nested arrays of these types
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="string">
+  The joined string with all segments separated by the specified separator
+</ResponseField>
+
+### Example
+
+```typescript
+import { joinBuilder } from '@magicyan/core';
+
+const result = joinBuilder(", ", "Hello", ["World", null], undefined, "!");
+console.log(result); // "Hello, World, !"
+```
+
+---
+
+## notFound
+
+Ensures that a value is either kept as is (if not `null`) or converted to `undefined`.
+
+<ParamField path="value" type="T" required>
+  The value to process. If it is `null`, it will return `undefined`; otherwise, it returns the original value
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="T & {} | undefined">
+  The original value if it is not `null`, otherwise `undefined`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript String Example
+import { notFound } from '@magicyan/core';
+
+const result = notFound("Hello");
+console.log(result); // "Hello"
+```
+
+```typescript Null Example
+import { notFound } from '@magicyan/core';
+
+const result = notFound(null);
+console.log(result); // undefined
+```
+
+```typescript Number Example
+import { notFound } from '@magicyan/core';
+
+const result = notFound(42);
+console.log(result); // 42
+```
+
+</CodeGroup>
+
+---
+
+## brBuilder
+
+Joins multiple strings or arrays of strings into a single string, separated by line breaks. Filters out any `null` or `undefined` values.
+
+<ParamField path="text" type="BuilderText[]" required>
+  The text segments to be joined. Each segment can be a string, an array of strings, or `null`/`undefined`
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="string">
+  The concatenated string with each segment separated by a line break (\n)
+</ResponseField>
+
+### Example
+
+```typescript
+import { brBuilder } from '@magicyan/core';
+
+const result = brBuilder("Hello", [null, "World"], undefined, "!");
+console.log(result);
+// Output:
+// Hello
+// World
+// !
+```
+
+---
+
+## spaceBuilder
+
+Joins multiple strings or arrays of strings into a single string separated by spaces, ignoring `null` and `undefined` values.
+
+<ParamField path="text" type="BuilderText[]" required>
+  A list of strings or arrays of strings, which may include `null` or `undefined`
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="string">
+  A single string where all valid strings are joined by a space
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Basic Example
+import { spaceBuilder } from '@magicyan/core';
+
+const result = spaceBuilder("Hello", "World");
+console.log(result); // "Hello World"
+```
+
+```typescript With Nulls
+import { spaceBuilder } from '@magicyan/core';
+
+const result = spaceBuilder(["Hello", null], "World");
+console.log(result); // "Hello World"
+```
+
+```typescript Only Defined Values
+import { spaceBuilder } from '@magicyan/core';
+
+const result = spaceBuilder(null, undefined, "Only this");
+console.log(result); // "Only this"
+```
+
+</CodeGroup>
+
+---
+
+## replaceText
+
+Replaces all occurrences of the properties in the `replacements` object within the given `text` string. The replacements can be either strings or functions that receive the matched substring.
+
+<ParamField path="text" type="string" required>
+  The text in which the replacements will be made
+</ParamField>
+
+<ParamField path="replacements" type="Record<string, string | ((text: string) => string)>" required>
+  An object where keys are substrings to be replaced and values are either a string or a function that returns a string to replace the match
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="string">
+  A new string with all specified replacements applied
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript String Replacement
+import { replaceText } from '@magicyan/core';
+
+const result = replaceText("Hello, {name}!", { "{name}": "Alice" });
+console.log(result); // "Hello, Alice!"
+```
+
+```typescript Function Replacement
+import { replaceText } from '@magicyan/core';
+
+const result = replaceText(
+  "Goodbye, {name}. See you later!", 
+  { "{name}": (match) => match.toUpperCase() }
+);
+console.log(result); // "Goodbye, {NAME}. See you later!"
+```
+
+```typescript Multiple Replacements
+import { replaceText } from '@magicyan/core';
+
+const result = replaceText(
+  "Hello {name}, you have {count} messages",
+  { 
+    "{name}": "Alice",
+    "{count}": "5"
+  }
+);
+console.log(result); // "Hello Alice, you have 5 messages"
+```
+
+</CodeGroup>
+
+---
+
+## capitalize
+
+Capitalizes the first letter of a given word, or all words in a phrase if `allWords` is true.
+
+<ParamField path="word" type="string" required>
+  The word or phrase to capitalize
+</ParamField>
+
+<ParamField path="allWords" type="boolean">
+  A flag to indicate whether to capitalize the first letter of every word in a phrase. Defaults to `false`
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="string">
+  The word or phrase with the specified capitalization
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Single Word
+import { capitalize } from '@magicyan/core';
+
+const result = capitalize("hello");
+console.log(result); // "Hello"
+```
+
+```typescript All Words
+import { capitalize } from '@magicyan/core';
+
+const result = capitalize("hello world", true);
+console.log(result); // "Hello World"
+```
+
+```typescript With Whitespace
+import { capitalize } from '@magicyan/core';
+
+const result = capitalize("  whitespace  ");
+console.log(result); // "Whitespace"
+```
+
+</CodeGroup>
+
+---
+
+## limitText
+
+Truncates the given text to a specified length and appends the `endText` if the text exceeds the maximum length.
+
+<ParamField path="text" type="string" required>
+  The text to be truncated
+</ParamField>
+
+<ParamField path="maxLength" type="number" required>
+  The maximum allowed length of the text
+</ParamField>
+
+<ParamField path="endText" type="string">
+  A string to append at the end of the truncated text if it exceeds the `maxLength`. Defaults to an empty string
+</ParamField>
+
+### Returns
+
+<ResponseField name="return" type="string">
+  The truncated text with the `endText` appended if the original text exceeds the `maxLength`
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+
+```typescript Without End Text
+import { limitText } from '@magicyan/core';
+
+const result = limitText("Hello, this is a long sentence.", 10);
+console.log(result); // "Hello, thi"
+```
+
+```typescript With Ellipsis
+import { limitText } from '@magicyan/core';
+
+const result = limitText("Hello, this is a long sentence.", 10, "...");
+console.log(result); // "Hello, thi..."
+```
+
+```typescript No Truncation Needed
+import { limitText } from '@magicyan/core';
+
+const result = limitText("Short", 10, "...");
+console.log(result); // "Short"
+```
+
+</CodeGroup>
